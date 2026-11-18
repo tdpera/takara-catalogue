@@ -4,7 +4,8 @@ import { requireShop, type Role } from "@/lib/session";
 import { formatPhone } from "@/lib/phone";
 import { getT } from "@/i18n/server";
 import { AppHeader } from "@/components/AppHeader";
-import { card } from "@/components/ui";
+import { btn, card } from "@/components/ui";
+import { signOut } from "@/app/actions";
 import { InviteForm, MemberActions, NameForm, PendingInvite } from "./TeamForms";
 
 export const metadata: Metadata = { title: "Team" };
@@ -110,6 +111,10 @@ export default async function TeamPage() {
             )}
           </section>
         )}
+
+        <form action={signOut}>
+          <button className={btn + " w-full"}>{t("nav.signOut")}</button>
+        </form>
       </main>
     </>
   );

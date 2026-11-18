@@ -135,3 +135,28 @@ Gold rates are append-only (no edits or deletes), so the history is a reliable r
   those pieces, and signs image URLs. Anonymous users have no table access at all.
 - **Analytics** live in an `events` table. Only owners and managers can read it.
   `share_viewed` can only be written by the server.
+
+## 13. Gold rates and pricing (step 2)
+- **One pricing engine** (`src/lib/pricing.ts`) is used everywhere: the app, the server and
+  (from step 6) share links and images, so a price can never differ between screens.
+- **"Today" is the calendar day in Dubai**, not the phone's or server's time zone. A rate set at
+  23:59 is stale at 00:01.
+- **Derive** multiplies the 24K rate by the brief's ratios and rounds half-up to fils
+  (472.50 → 437.39, 419.44, 359.67). The user then checks each value against the board.
+  Note: on the 13 Nov board, rounding to the nearest AED 0.25 would match the board exactly
+  (437.50, 419.50, 359.75). That's easy to switch to if it holds on other days.
+- **Saving rates saves every filled karat with the same timestamp**, even unchanged ones. Saving
+  means "I checked these against today's board", which is what clears the warning.
+- **Typo guards before saving:**
+  - purer gold must cost more per gram (24K > 22K > 21K > 18K > 14K), which blocks dropped digits;
+  - a move of more than 10% since the last rate needs an explicit "They're correct, save";
+  - the server re-checks everything; the browser checks are only for speed.
+- **Digits from Arabic, Hindi or Malayalam keyboards are accepted** (٤٧٢٫٥ reads as 472.5).
+  Prices are always *shown* with Western digits, the norm for UAE trade.
+- **Pricing settings** (default making charge per gram, VAT on/off) sit on the rates screen,
+  with owner/manager access only. Shop branding (logo) comes with the share image in step 6.
+- **Warnings are per role:** owners and managers get an "Update today's rates" button,
+  salespeople get "Ask an owner or manager".
+- **Price check:** the rates screen has a calculator anyone can use to quote a price from the
+  current rates without saving a piece. The same breakdown component will be reused on the piece
+  detail screen in step 5.

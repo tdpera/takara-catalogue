@@ -15,7 +15,8 @@
     "db:reset": "supabase db reset",
     "db:lint": "supabase db lint --level warning",
     "seed": "node scripts/seed.mjs",
-    "e2e": "node e2e/run.mjs"
+    "e2e": "node e2e/run.mjs",
+    "db:setup-sql": "node scripts/build-setup-sql.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.10.0",

@@ -134,7 +134,14 @@ The SMS/WhatsApp provider for sign-in codes (Twilio) is configured in Supabase, 
    shops; for Dubai that's usually Mumbai (`ap-south-1`) unless your plan offers a Middle East
    region.
 2. Apply the database schema from this repo (tables, security rules, functions and storage
-   buckets are all in `supabase/migrations`). Log in:
+   buckets are all in `supabase/migrations`).
+
+   **Easiest (no command line):** in the Supabase dashboard open **SQL Editor → New query**,
+   paste the whole of [`supabase/setup.sql`](supabase/setup.sql) and press **Run**. Do this once,
+   on a new empty project. (`setup.sql` is all the migrations joined, made by
+   `pnpm db:setup-sql`.)
+
+   **Or with the Supabase CLI**, which also handles later updates. Log in:
 
    ```bash
    pnpm exec supabase login

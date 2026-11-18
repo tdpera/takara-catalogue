@@ -2,7 +2,7 @@ import type { Messages } from "./en";
 
 // Hindi. Needs review by a native speaker before launch.
 const hi: Messages = {
-  app: { name: "सूक कैटलॉग", tagline: "आपकी दुकान का कैटलॉग, आज के सोने के रेट पर।" },
+  app: { name: "ताकारा", tagline: "आपकी दुकान का कैटलॉग, आज के सोने के रेट पर।" },
   common: {
     skip: "सामग्री पर जाएँ",
     retry: "फिर कोशिश करें",
@@ -59,7 +59,7 @@ const hi: Messages = {
     sendInvite: "जोड़ें",
     inviteHelp: "जब वे इस नंबर से साइन इन करेंगे, वे दुकान में जुड़ जाएँगे। ऐप उन्हें कोई संदेश नहीं भेजता; उन्हें खुद बताएँ।",
     tellWhatsApp: "उन्हें WhatsApp पर बताएँ",
-    inviteMessage: "मैंने आपको सूक कैटलॉग पर {shop} में जोड़ा है। इसी नंबर से साइन इन करें: {url}",
+    inviteMessage: "मैंने आपको ताकारा पर {shop} में जोड़ा है। इसी नंबर से साइन इन करें: {url}",
     pending: "उनके साइन इन का इंतज़ार",
     remove: "हटाएँ",
     leave: "दुकान छोड़ें",

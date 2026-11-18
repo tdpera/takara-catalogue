@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   const share = await load((await params).token).catch(() => null);
   // No prices or piece details in link previews.
   return {
-    title: share ? share.shop : "Souq Catalogue",
+    title: share ? share.shop : "Takara",
     robots: { index: false, follow: false, nocache: true },
     referrer: "no-referrer",
     openGraph: share ? { title: share.shop } : undefined,
@@ -150,7 +150,7 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
           </ul>
           <p className="pt-4 text-center text-sm text-muted">{t("pub.validUntil", { date: formatDubaiDateTime(share.expires_at, locale) })}</p>
           <p className="flex items-center justify-center gap-1.5 pt-4 pb-2 text-xs text-muted">
-            <Logo size={16} /> Souq Catalogue
+            <Logo size={16} /> Takara
           </p>
         </main>
       </div>

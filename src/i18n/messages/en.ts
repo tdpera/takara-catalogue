@@ -1,6 +1,6 @@
 // English is the source language. Every other locale must provide the same keys (checked by TypeScript).
 const en = {
-  app: { name: "Souq Catalogue", tagline: "Your shop's catalogue, priced at today's gold rate." },
+  app: { name: "Takara", tagline: "Your shop's catalogue, priced at today's gold rate." },
   common: {
     skip: "Skip to content",
     retry: "Try again",
@@ -57,7 +57,7 @@ const en = {
     sendInvite: "Add",
     inviteHelp: "They join the shop when they sign in with this number. The app doesn't message them; tell them yourself.",
     tellWhatsApp: "Tell them on WhatsApp",
-    inviteMessage: "I've added you to {shop} on Souq Catalogue. Sign in with this number: {url}",
+    inviteMessage: "I've added you to {shop} on Takara. Sign in with this number: {url}",
     pending: "Waiting for them to sign in",
     remove: "Remove",
     leave: "Leave shop",

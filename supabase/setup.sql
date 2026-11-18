@@ -1,4 +1,4 @@
--- Souq Catalogue: full database setup for a NEW, empty Supabase project.
+-- Takara: full database setup for a NEW, empty Supabase project.
 -- Generated from supabase/migrations by `pnpm db:setup-sql`; don't edit by hand.
 --
 -- How to use: Supabase dashboard -> SQL Editor -> New query -> paste this whole file -> Run.
@@ -10,7 +10,7 @@ begin;
 
 -- ============================================================ 20261118000100_core_schema.sql
 
--- Souq Catalogue: core schema, roles and row level security.
+-- Takara: core schema, roles and row level security.
 --
 -- Principles
 --  * Every row that belongs to a shop carries shop_id, and every policy checks membership

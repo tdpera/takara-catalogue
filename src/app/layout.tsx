@@ -9,10 +9,10 @@ import { makeT } from "@/i18n";
 import { display, mono } from "./fonts";
 
 export const metadata: Metadata = {
-  title: { default: "Souq Catalogue", template: "%s · Souq Catalogue" },
+  title: { default: "Takara", template: "%s · Takara" },
   description: "Fast catalogues for gold and jewellery sellers.",
-  applicationName: "Souq Catalogue",
-  appleWebApp: { capable: true, title: "Souq", statusBarStyle: "default" },
+  applicationName: "Takara",
+  appleWebApp: { capable: true, title: "Takara", statusBarStyle: "default" },
   icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
 };
 

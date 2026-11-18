@@ -1,4 +1,4 @@
-/* Souq Catalogue service worker.
+/* Takara service worker.
  * - Static build files: cache first (they are content-hashed).
  * - Pages: network first, falling back to the last copy, so the capture screen opens offline.
  * - Catalogue images (Supabase Storage signed URLs): cache first, keyed by the file path

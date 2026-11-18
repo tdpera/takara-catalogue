@@ -2,7 +2,7 @@ import type { Messages } from "./en";
 
 // Arabic (Gulf/MSA). Needs review by a native speaker before launch.
 const ar: Messages = {
-  app: { name: "كتالوج السوق", tagline: "كتالوج محلك، بأسعار الذهب اليوم." },
+  app: { name: "تاكارا", tagline: "كتالوج محلك، بأسعار الذهب اليوم." },
   common: {
     skip: "انتقل إلى المحتوى",
     retry: "حاول مجددًا",
@@ -59,7 +59,7 @@ const ar: Messages = {
     sendInvite: "إضافة",
     inviteHelp: "ينضم إلى المحل عندما يسجّل الدخول بهذا الرقم. التطبيق لا يرسل له أي رسالة؛ أخبره بنفسك.",
     tellWhatsApp: "أخبره عبر واتساب",
-    inviteMessage: "أضفتك إلى {shop} في كتالوج السوق. سجّل الدخول بهذا الرقم: {url}",
+    inviteMessage: "أضفتك إلى {shop} في تاكارا. سجّل الدخول بهذا الرقم: {url}",
     pending: "بانتظار تسجيل دخوله",
     remove: "إزالة",
     leave: "مغادرة المحل",

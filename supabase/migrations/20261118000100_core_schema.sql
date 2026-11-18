@@ -1,4 +1,4 @@
--- Souq Catalogue: core schema, roles and row level security.
+-- Takara: core schema, roles and row level security.
 --
 -- Principles
 --  * Every row that belongs to a shop carries shop_id, and every policy checks membership

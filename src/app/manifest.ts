@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Souq Catalogue",
-    short_name: "Souq",
+    name: "Takara",
+    short_name: "Takara",
     description: "Fast catalogues for gold and jewellery sellers.",
     start_url: "/",
     scope: "/",

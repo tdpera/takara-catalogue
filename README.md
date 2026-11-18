@@ -1,4 +1,4 @@
-# Souq Catalogue
+# Takara
 
 A mobile-first catalogue for gold and jewellery sellers in Dubai. Salespeople photograph a piece
 on the scale, the app fills in the details and prices it at today's gold rate, and they share

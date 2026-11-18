@@ -190,3 +190,57 @@ Gold rates are append-only (no edits or deletes), so the history is a reliable r
   caching; step 5 will decide between this and unguessable public paths for catalogue speed.
 - A SKU can be skipped (never duplicated) if a piece is saved twice at the same instant after a
   dropped response; the database guarantees uniqueness.
+
+## 15. AI fill from photo (step 4)
+- **Runs by itself after each photo** (a checkbox on the capture screen turns this off; the choice
+  is remembered on the phone). The photo hint already asks for the scale display in shot, so
+  the AI can read the weight, the purity stamp, the category and a name while the salesperson
+  carries on. **Saving never waits for it.**
+- **The AI never overwrites what the salesperson typed or tapped** for the current piece. It may
+  replace a karat or category that was only carried over from the last piece, because a stamp
+  it read is better evidence than "same as last time"; the field is then highlighted.
+- **Highlighted, not blocking.** Every AI-filled field gets a "AI · check" badge and an amber
+  outline; editing it removes the badge. A box lists what was filled and what must still be
+  typed by hand. I didn't require a tap per field to confirm: that would cost several seconds per
+  piece against the 15-second target. Saving with the fields visible counts as confirming them.
+- **Strict JSON, then checked again on the server** (`src/lib/ai/validate.ts`, 15 unit tests).
+  Anything failing a check is dropped and left for the salesperson, never "fixed up":
+  - name: karat mentions removed, at most 6 words;
+  - karat: kept only if the AI also copied the exact marking it read ("916", "22K");
+  - weight: kept only if it equals the single number the AI says the display shows, in grams,
+    with at most 3 decimals. Carats, tolas and ounces are rejected. The decimals stay as displayed
+    ("24.350");
+  - descriptions: 1–2 sentences, in the right script for each language, and **no digits in any
+    script**, so no weight, karat or price can slip into client-facing text.
+- **Photos are only read.** The route sends the 1600 px JPEG the phone already made (typically
+  60–300 KB) and stores nothing; the photo is uploaded unchanged by the capture queue as before.
+- **Descriptions arrive even if the piece was saved first.** The phone gives each piece its id
+  when the photo is taken. When the AI reply is recorded it adds its descriptions to the saved
+  piece, or the piece takes them when it's saved later; a database lock on the piece id makes
+  either order safe. Descriptions the salesperson typed are never replaced, and one salesperson's
+  AI reply can't write to a colleague's piece. Karat, weight and name from a late reply are
+  dropped, because the salesperson has already decided those.
+- **Every request is logged** in `ai_requests` (status, model actually used, tokens, time), readable
+  by the shop's members and written only through two database functions. This is the basis for
+  cost reporting and for comparing models.
+- **Limits:** 12 requests a minute per person (fast capture is about one piece every 8 seconds) and
+  1500 a day per shop (roughly USD 15–30). The day is the Dubai day. Over the limit, Claude isn't
+  called and the form says how long to wait. Both numbers are in the migration and easy to change.
+- **Errors each have their own message** in all four languages: unreadable photo, no jewellery,
+  AI declined, unusable reply, AI busy (Claude 429/5xx/overloaded), too slow, offline, shop
+  quota, per-person limit, not set up, signed out. Where trying again can help, a "Fill from
+  photo" button appears.
+- **Model and settings:** `claude-opus-5-5` (`ANTHROPIC_MODEL`) with adaptive thinking at **low
+  effort** (`ANTHROPIC_EFFORT`): reading a display and a stamp is perception, not long reasoning,
+  and low effort keeps the wait short. Server-side fallbacks are on (`fallbacks: "default"`), so
+  a false-positive refusal on a jewellery photo is retried on another model automatically. One
+  automatic retry for connection errors, 40 s timeout per attempt.
+- **Security:** the API key is read only in `src/lib/ai/claude.ts` (marked server-only) and passed
+  explicitly, so the SDK can't pick up some other credential. The route checks the session, shop
+  membership (in the database), the request's origin, file size and that the file really is an
+  image. Text in a photo is treated as information, never instructions, and the reply can only
+  take the fixed JSON shape.
+- **Not verified yet:** I couldn't call the real Claude API from this environment, so every test
+  ran against a local stand-in that returns realistic and broken replies. The test set of real
+  photos promised in section 10 is also still to do: it needs real shop photos and a key. Until
+  then, model accuracy and real response time (expect roughly 3–8 s) are unmeasured.

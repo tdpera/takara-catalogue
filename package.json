@@ -16,6 +16,7 @@
     "db:lint": "supabase db lint --level warning"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
     "decimal.js-light": "^2.5.1",

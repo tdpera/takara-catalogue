@@ -9,8 +9,8 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { checkPiece, KARATS } from "@/lib/pricing";
 import { MEDIA_TYPE, mediaPaths, VIDEO_EXTS } from "@/lib/media-paths";
 import { nameFor } from "@/lib/outbox/policy";
+import { CATEGORIES } from "@/lib/ai/validate";
 
-const CATEGORIES = ["Bangle", "Ring", "Chain", "Necklace", "Earrings", "Pendant", "Bracelet", "Set", "Other"] as const;
 type Fail = { error: "auth" | "rejected" | "retry"; detail?: string };
 
 async function session() {
@@ -20,6 +20,7 @@ async function session() {
 }
 
 const num = z.string().max(20);
+const desc = z.string().trim().min(1).max(600);
 const PieceInput = z.object({
   id: z.uuid(),
   shopId: z.uuid(),
@@ -35,6 +36,11 @@ const PieceInput = z.object({
     making_per_g: num,
     making_flat: num,
     extras_aed: num,
+    // From AI fill, possibly edited. Checked again here: the server never trusts the phone.
+    descriptions: z
+      .object({ en: desc, ar: desc, hi: desc, ml: desc })
+      .partial()
+      .optional(),
   }),
 });
 
@@ -69,6 +75,9 @@ export async function createPiece(raw: unknown): Promise<{ sku: string } | Fail>
       making_per_g: blankToNull(f.making_per_g) ?? "0",
       making_flat: blankToNull(f.making_flat),
       extras_aed: blankToNull(f.extras_aed) ?? "0",
+      // Empty means "none yet": a database trigger then adds the AI reply's descriptions if it
+      // arrived before this row (see 20261118000200_ai_fill.sql).
+      descriptions: f.descriptions ?? {},
       created_by: user.id,
     })
     .select("sku")

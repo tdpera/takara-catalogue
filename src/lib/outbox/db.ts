@@ -32,6 +32,7 @@ export type PieceFields = {
   making_per_g: string;
   making_flat: string;
   extras_aed: string;
+  descriptions?: Partial<Record<"en" | "ar" | "hi" | "ml", string>>;
 };
 
 export type OutboxPiece = {

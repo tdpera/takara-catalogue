@@ -1,9 +1,10 @@
 "use client";
 /**
  * Catalogue grid with bulk select. Selection survives opening a piece and coming back
- * (sessionStorage, per shop) and is what step 6's sharing will start from.
+ * (sessionStorage, per shop); Share opens the share composer with the selected pieces.
  */
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useT } from "@/i18n/client";
 import type { MessageKey } from "@/i18n";
@@ -104,6 +105,7 @@ function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; s
 export function Grid({ shopId, cards }: { shopId: string; cards: Card[] }) {
   const { t } = useT();
   const sel = useSelection(shopId);
+  const router = useRouter();
   const [note, setNote] = useState<MessageKey | null>(null);
   return (
     <>
@@ -119,7 +121,10 @@ export function Grid({ shopId, cards }: { shopId: string; cards: Card[] }) {
             <button type="button" className={btn} onClick={() => { sel.clear(); setNote(null); }}>
               {t("catalogue.clearSelection")}
             </button>
-            <button type="button" className={btnPrimary} onClick={() => setNote("catalogue.shareSoon")}>
+            <button type="button" className={btnPrimary} onClick={() => {
+                if (sel.ids.length > 24) return setNote("share.tooMany");
+                router.push(`/share?ids=${sel.ids.join(",")}`);
+              }}>
               {t("catalogue.share")}
             </button>
             {note && <p role="status" className="basis-full text-sm text-muted">{t(note)}</p>}

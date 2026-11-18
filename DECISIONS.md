@@ -284,3 +284,46 @@ Gold rates are append-only (no edits or deletes), so the history is a reliable r
   and `share_viewed` come in step 6.
 - **Lighthouse mobile** (local production build, so real network times will add to these):
   catalogue 98–99, piece page 97, capture 98; accessibility and best practices 100 on all three.
+
+## 17. Sharing with clients (step 6)
+- **Flow:** select pieces in the catalogue → Share → optionally pick or add a client → message →
+  create the link → send it on WhatsApp, copy it, or save the catalogue image. **Nothing is
+  ever sent by the app.** "Send on WhatsApp" is a wa.me link: WhatsApp opens with the message
+  and link filled in, and the salesperson presses send. With no number saved, WhatsApp asks
+  who to send it to.
+- **The message:** the brief's English template: a greeting, one line per piece ("1. Rope bangle:
+  22K, 24.35 g, AED 11,183"), the note that prices follow today's gold rate and are confirmed in
+  store (with VAT if the shop charges it), and the shop name. It can be edited.
+- **Write with AI never handles a figure.** Claude writes only the greeting and the closing, in
+  the client's language, using their first name and saved notes. The piece lines and the price
+  note are then inserted by our code from the server's own prices, and the note comes from fixed
+  translations. Claude isn't even shown prices, weights or karats. Its text is also rejected if
+  it contains any number (in any script), a link or the wrong language, with one automatic
+  retry. This meets "the AI must keep the exact figures" by construction, rather than by
+  checking afterwards. It counts against the same AI limits as photo fill.
+- **Share links** are `/s/{22-character random token}` (128 bits, not guessable), expire after 7
+  days and can be turned off. A link holds up to 24 pieces; sold pieces are left out when
+  composing, and a piece sold later shows as "Sold" with no price. The page needs no login and
+  shows each piece's spin (or photo), karat, weight, **today's price** (worked out when the page
+  opens) and description in the client's language, which the client can switch. It shows nothing
+  about the client, the salesperson or the message, and asks search engines not to index it.
+- **How the public page reads data:** through one database function, `get_share(token)`, that
+  returns only what a client should see, and only while the link is valid. The service-role key
+  is used for exactly one thing: signing the images that function returned (24 hours).
+- **View tracking that means something.** When a link is sent, WhatsApp fetches it at once to
+  build a preview, so counting page loads would show every link as "opened". A view is recorded
+  instead by a small script once the page is actually visible in a real browser, with a
+  second filter on the user agent for known robots. The salesperson's own visits aren't
+  counted, and repeat visits by the same visitor within 30 minutes count once. The visitor id
+  is a hash of address, browser, link and date, so addresses aren't stored. The Shares page
+  shows "Not opened yet" or "Opened 3 times, last 18 Nov, 14:05".
+- **Catalogue image:** drawn on the phone (canvas) as a 1080 px wide PNG with the shop name,
+  date, up to 6 pieces (photo, name, karat and weight, price) and the price note. Photos are
+  cropped to squares but never retouched. It opens the phone's share sheet where available,
+  otherwise downloads. In Arabic it's laid out right to left, with figures still written
+  left to right ("AED 11,183").
+- **Clients** belong to the salesperson who added them (other staff, managers included, can't
+  see them), with name, optional WhatsApp number, message language and notes.
+- **Analytics:** `share_created` (pieces, client yes/no, AI message yes/no) and `share_viewed`.
+- **Not done:** a shop logo on the image and page (shops have a logo field but no upload screen
+  yet), and extending a link's expiry (create a new one instead).

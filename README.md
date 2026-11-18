@@ -14,6 +14,9 @@ cp .env.example .env.local   # fill NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUP
 pnpm dev
 ```
 
+Share links (step 6) need `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` (`pnpm db:start` prints it as
+`SERVICE_ROLE_KEY`). It's used only on the server, to sign images for the public share page.
+
 AI fill from photo (step 4) needs `ANTHROPIC_API_KEY` in `.env.local`. Without it the app works
 normally and the capture screen says AI fill isn't set up. The key is only read on the server.
 

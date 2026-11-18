@@ -56,7 +56,7 @@ export type Card = {
   spin: Spin | null;
 };
 
-async function sign(paths: (string | null | undefined)[]) {
+export async function sign(paths: (string | null | undefined)[]) {
   const list = [...new Set(paths.filter((p): p is string => !!p))];
   if (list.length === 0) return new Map<string, string>();
   const supabase = await supabaseServer();

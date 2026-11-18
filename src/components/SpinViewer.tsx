@@ -69,15 +69,35 @@ export function SpinViewer({ src, frames, cols, label, frameText, mode, auto = t
     }
   }
 
-  // Load the sprite before showing it (the photo underneath stays visible until then).
+  // Load the sprite only when it comes near the screen, then show it (the photo underneath
+  // stays visible until then). A page with many spins downloads only the ones looked at.
   useEffect(() => {
     setReady(false);
-    const img = new Image();
-    img.decoding = "async";
-    img.onload = () => setReady(true);
-    img.src = src;
+    const node = el.current;
+    let img: HTMLImageElement | null = null;
+    const load = () => {
+      img = new Image();
+      img.decoding = "async";
+      img.onload = () => setReady(true);
+      img.src = src;
+    };
+    if (!node || typeof IntersectionObserver === "undefined") {
+      load();
+      return;
+    }
+    const io = new IntersectionObserver(
+      (es) => {
+        if (es.some((e) => e.isIntersecting)) {
+          io.disconnect();
+          load();
+        }
+      },
+      { rootMargin: "300px" },
+    );
+    io.observe(node);
     return () => {
-      img.onload = null;
+      io.disconnect();
+      if (img) img.onload = null;
     };
   }, [src]);
 

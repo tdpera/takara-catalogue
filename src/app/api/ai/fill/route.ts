@@ -103,6 +103,19 @@ export async function POST(req: NextRequest) {
   if (finish.error) console.error("[ai-fill] finish failed:", finish.error.message);
 
   if (check?.ok) {
+    // Analytics (brief: ai_fill_used). Failures are counted in ai_requests instead.
+    const sg = check.suggestions;
+    const filled = [
+      sg.name && "name", "category", sg.karat && "karat", sg.weight_g && "weight",
+      ...Object.keys(sg.descriptions).map((l) => `description_${l}`),
+    ].filter(Boolean);
+    const ev = await supabase.from("events").insert({
+      shop_id: fields.data.shopId,
+      user_id: auth.user.id,
+      name: "ai_fill_used",
+      props: { request_id: requestId, piece_id: fields.data.pieceId, filled, dropped: check.dropped, duration_ms: durationMs, model: run.ok ? run.model : null },
+    });
+    if (ev.error) console.error("[ai-fill] event not logged:", ev.error.message);
     return NextResponse.json({ ok: true, requestId, suggestions: check.suggestions, dropped: check.dropped });
   }
   if (check) {

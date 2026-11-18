@@ -1,0 +1,79 @@
+"use client";
+import { useRef, useState } from "react";
+import { useT } from "@/i18n/client";
+import type { Spin } from "@/lib/catalogue";
+import { SpinViewer } from "@/components/SpinViewer";
+
+/** Big spin viewer and the photo, as tabs (the spin first when there is one). */
+export function PieceMedia({ name, photo, spin }: { name: string; photo: { full: string; thumb: string | null } | null; spin: Spin | null }) {
+  const { t } = useT();
+  const [tab, setTab] = useState<"spin" | "photo">(spin ? "spin" : "photo");
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const list = (spin ? ["spin", "photo"] : ["photo"]) as ("spin" | "photo")[];
+
+  const frame = (
+    <div className="relative mx-auto aspect-square w-full max-w-[32rem] overflow-hidden rounded-2xl border border-line bg-paper">
+      {tab === "spin" && spin ? (
+        <>
+          {photo?.thumb && (
+            // Shown until the sprite has loaded.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photo.thumb} alt="" className="absolute inset-0 size-full object-cover" />
+          )}
+          <SpinViewer
+            mode="full"
+            src={spin.src}
+            frames={spin.frames}
+            cols={spin.cols}
+            label={t("piece.spinLabel", { name })}
+            frameText={(n, total) => t("piece.frame", { n, total })}
+          />
+          <span aria-hidden="true" className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-xs text-white">
+            ↔ {t("piece.dragHint")}
+          </span>
+        </>
+      ) : photo ? (
+        // Full photo, shown as taken (only resized on the phone).
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={photo.full} alt={t("piece.photoAlt", { name })} width={1600} height={1600} fetchPriority="high" className="size-full object-contain" />
+      ) : (
+        <p className="flex size-full items-center justify-center p-4 text-center text-muted">{t("piece.noMedia")}</p>
+      )}
+    </div>
+  );
+
+  if (list.length === 1) return frame;
+  return (
+    <div className="space-y-3">
+      <div role="tablist" aria-label={t("piece.mediaTabs")} className="flex justify-center gap-2">
+        {list.map((k, i) => (
+          <button
+            key={k}
+            ref={(b) => {
+              tabs.current[i] = b;
+            }}
+            role="tab"
+            id={`media-tab-${k}`}
+            aria-selected={tab === k}
+            aria-controls="media-panel"
+            tabIndex={tab === k ? 0 : -1}
+            onClick={() => setTab(k)}
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+              const next = (i + 1) % list.length;
+              setTab(list[next]);
+              tabs.current[next]?.focus();
+              e.preventDefault();
+            }}
+            className={`min-h-10 rounded-full border px-4 text-sm font-medium ${tab === k ? "border-gold bg-gold-soft" : "border-line bg-surface"}`}
+          >
+            {k === "spin" ? t("piece.spinTab") : t("piece.photoTab")}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel" id="media-panel" aria-labelledby={`media-tab-${tab}`}>
+        {frame}
+      </div>
+    </div>
+  );
+}

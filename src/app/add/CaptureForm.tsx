@@ -10,6 +10,7 @@ import { enqueue } from "@/lib/outbox/queue";
 import type { OutboxMedia, OutboxPiece } from "@/lib/outbox/db";
 import { nameFor } from "@/lib/outbox/policy";
 import { SpinPreview } from "@/components/SpinPreview";
+import { AiBadge, Chips } from "@/components/form-bits";
 import { btn, btnPrimary, errorText, hint, input, label } from "@/components/ui";
 import { LOCALE_NAMES } from "@/i18n";
 import { CATEGORIES, DESC_LANGS, type Category, type DescLang, type Descriptions, type AiSuggestions } from "@/lib/ai/shared";
@@ -39,12 +40,6 @@ const AI_ERR_KEY: Partial<Record<AiFillError, MessageKey>> = {
   auth: "ai.err_auth",
 };
 
-function AiBadge({ show }: { show: boolean }) {
-  const { t } = useT();
-  if (!show) return null;
-  return <span className="ms-2 inline-block rounded-full border border-warn bg-warn-soft px-2 py-0.5 align-middle text-xs font-semibold text-warn">{t("ai.badge")}</span>;
-}
-
 const PRICE_ERR: Record<PriceError, MessageKey> = {
   invalid_karat: "add.chooseKarat",
   invalid_weight: "price.errWeight",
@@ -70,42 +65,6 @@ function saveSticky(v: { karat: Karat | null; category: Category | null; making:
 
 type Photo = CompressedPhoto & { url: string };
 type Spin = Sprite & { video: File; ext: string; url: string };
-
-function Chips<T extends string | number>({
-  legend,
-  options,
-  value,
-  onChange,
-  render,
-  name,
-  invalid,
-  ai,
-}: {
-  legend: string;
-  options: readonly T[];
-  value: T | null;
-  onChange: (v: T) => void;
-  render: (v: T) => string;
-  name: string;
-  invalid?: boolean;
-  ai?: boolean;
-}) {
-  return (
-    <fieldset aria-invalid={invalid || undefined}>
-      <legend className={label}>{legend}<AiBadge show={!!ai} /></legend>
-      <div className="flex flex-wrap gap-2">
-        {options.map((o) => (
-          <label key={String(o)} className="relative">
-            <input type="radio" name={name} className="peer sr-only" checked={value === o} onChange={() => onChange(o)} />
-            <span className={`inline-flex min-h-11 min-w-14 cursor-pointer items-center justify-center rounded-xl border border-line bg-surface px-3 font-medium peer-checked:font-semibold ${ai ? "peer-checked:border-2 peer-checked:border-warn peer-checked:bg-warn-soft" : "peer-checked:border-gold peer-checked:bg-gold-soft"} peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]`}>
-              {render(o)}
-            </span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
 
 function cleanDescs(d: Descriptions): Descriptions | undefined {
   const out: Descriptions = {};

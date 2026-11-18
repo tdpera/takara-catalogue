@@ -5,7 +5,7 @@ import { signOut } from "@/app/actions";
 import { allPieces } from "@/lib/outbox/db";
 import { btn } from "./ui";
 
-/** Warns about unfinished uploads and clears cached pages before signing out. */
+/** Warns about unfinished uploads and clears cached pages and images before signing out. */
 export function SignOutButton({ userId }: { userId: string }) {
   const { t } = useT();
   const [pending, start] = useTransition();
@@ -23,7 +23,7 @@ export function SignOutButton({ userId }: { userId: string }) {
           if (waiting && !window.confirm(t("queue.signOutPending", { count: waiting }))) return;
           try {
             const keys = await caches.keys();
-            await Promise.all(keys.filter((k) => k.startsWith("pages-")).map((k) => caches.delete(k)));
+            await Promise.all(keys.filter((k) => k.startsWith("pages-") || k.startsWith("media-")).map((k) => caches.delete(k)));
           } catch {}
           await signOut();
         })

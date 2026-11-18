@@ -244,3 +244,43 @@ Gold rates are append-only (no edits or deletes), so the history is a reliable r
   ran against a local stand-in that returns realistic and broken replies. The test set of real
   photos promised in section 10 is also still to do: it needs real shop photos and a key. Until
   then, model accuracy and real response time (expect roughly 3–8 s) are unmeasured.
+
+## 16. Catalogue, piece page and spin viewer (step 5)
+- **Filters and search live in the URL** (`/?q=&category=&karat=&status=`). Reloading, the back
+  button and sending a colleague a link all keep them, and the page works without JavaScript.
+  Filtering happens in the database, so it stays fast with thousands of pieces. Search covers
+  name and SKU in any script; the text is cleaned to letters, digits, spaces and hyphens first
+  so it can't change the database query.
+- **24 pieces per page, "Show more" for the next 24.** I measured 48 first: Lighthouse mobile
+  scored 89 with 400 ms of blocked main thread. With 24 it scores 98–99 (50 ms). 24 cards is
+  12 rows on a phone.
+- **Cards** show the photo, with the spin on top once it has loaded. Spins turn by themselves
+  only while on screen, never with reduced motion (as the brief asks), and stop for good once
+  turned by hand. All spins share one timer and move a background image rather than redrawing,
+  which keeps a full grid light on low-end phones. Dragging a card turns it without opening the
+  piece; vertical swipes still scroll.
+- **The big viewer** on the piece page is a keyboard slider (arrow keys, Home/End, Page Up/Down)
+  that announces "Angle 3 of 24", plus pointer drag. It uses the full 360 px sprite; cards use
+  the small one (about 26 KB).
+- **Bulk select** keeps the selection while you open pieces and come back (per shop, for the
+  browser session). The Share button says sharing arrives in step 6, which starts from this
+  selection.
+- **Piece page:** spin and photo tabs, the full price breakdown at today's rate, description tabs
+  (opening on the interface language when it has text), and the status (in stock, reserved,
+  sold), which any member can change.
+- **Edit page (added; the brief doesn't list it):** AI descriptions can arrive after saving, and
+  weights get mistyped, so pieces need editing. The creator, a manager or the owner can edit;
+  only managers and owners can delete, which also removes the files. "Write descriptions from
+  the photo" fills only the empty languages, highlighted for checking. Replacing a photo or
+  spin isn't possible yet.
+- **Images:** the bucket stays private and pages use signed URLs (6 hours). Signatures change on
+  every page load, which would defeat browser caching, so the service worker caches images by
+  path without the signature. Paths never change (each file has its own id). Images then load
+  once per phone and also work offline. The cache keeps the newest 800 files and is cleared on
+  sign-out. I chose this over public paths (anyone with a link could see stock forever) and over
+  proxying images through our server (bandwidth and a function call per image on Vercel).
+- **Analytics:** `ai_fill_used` (in the brief, missed in step 4) is now logged on every
+  successful AI fill, with the fields filled. `piece_added` was already logged; `share_created`
+  and `share_viewed` come in step 6.
+- **Lighthouse mobile** (local production build, so real network times will add to these):
+  catalogue 98–99, piece page 97, capture 98; accessibility and best practices 100 on all three.

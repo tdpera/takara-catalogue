@@ -2,8 +2,11 @@
 -- Generated from supabase/migrations by `pnpm db:setup-sql`; don't edit by hand.
 --
 -- How to use: Supabase dashboard -> SQL Editor -> New query -> paste this whole file -> Run.
--- Run it once only. For later changes, prefer `supabase db push` (see README, "Deploy").
+-- Run it once only. It is all-or-nothing: if anything fails, nothing is changed.
+-- For later changes, prefer `supabase db push` (see README, "Deploy").
 -- Migrations included: 20261118000100_core_schema.sql, 20261118000200_ai_fill.sql, 20261118000300_sharing.sql
+
+begin;
 
 -- ============================================================ 20261118000100_core_schema.sql
 
@@ -897,3 +900,5 @@ end $$;
 
 revoke all on function public.get_share(text), public.record_share_view(text, text) from public;
 grant execute on function public.get_share(text), public.record_share_view(text, text) to anon, authenticated;
+
+commit;

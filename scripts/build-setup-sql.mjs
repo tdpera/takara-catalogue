@@ -12,8 +12,10 @@ const header = `-- Souq Catalogue: full database setup for a NEW, empty Supabase
 -- Generated from supabase/migrations by \`pnpm db:setup-sql\`; don't edit by hand.
 --
 -- How to use: Supabase dashboard -> SQL Editor -> New query -> paste this whole file -> Run.
--- Run it once only. For later changes, prefer \`supabase db push\` (see README, "Deploy").
+-- Run it once only. It is all-or-nothing: if anything fails, nothing is changed.
+-- For later changes, prefer \`supabase db push\` (see README, "Deploy").
 -- Migrations included: ${files.join(", ")}
 `;
-writeFileSync("supabase/setup.sql", [header, ...parts].join("\n"));
+// One transaction, so a failure part-way leaves the project untouched.
+writeFileSync("supabase/setup.sql", [header, "begin;\n", ...parts, "commit;\n"].join("\n"));
 console.log(`supabase/setup.sql: ${files.length} migrations`);

@@ -1,0 +1,137 @@
+# Product and technical decisions
+
+Decisions made before building, with the reasoning. Change them here if the business disagrees.
+
+## 1. Sign-in: Twilio Verify, WhatsApp first, SMS as fallback
+- Supabase phone OTP needs an SMS provider. **Twilio Verify** handles UAE sender
+  registration itself; sending your own SMS to UAE numbers needs a registered sender ID,
+  which can take weeks.
+- The code goes out on **WhatsApp by default**, with "Send by SMS instead" one tap away.
+  Everyone in the souk uses WhatsApp, delivery is more reliable than SMS in the UAE, and
+  it usually costs less.
+- Local development uses Supabase's fixed test numbers (`+971500000001` to `…04`, code
+  `123456`), so no messages are sent and no provider account is needed.
+
+## 2. Spin video: keep the original untouched, upload the sprite first
+- Record with the phone's own camera app (`<input capture>`). On cheap Androids it gives
+  better focus and exposure than an in-browser recorder, and it needs no permission prompt.
+- The 6×4 sprite (about 400 KB) uploads immediately, so the spin works in the catalogue right away.
+- The **original video is kept byte-for-byte** for 3D reconstruction later. Re-encoding it in the
+  browser is slow on cheap phones and throws away detail that 3D methods need.
+- The video uploads in the background with resumable uploads (TUS). Uploads wait for Wi-Fi when
+  the phone reports a metered connection. After 24 hours, or when the user taps "Upload now",
+  they go anyway. Videos over 100 MB are rejected with a message.
+- Storage estimate: 20 pieces a day with a spin on a third of them is about 4–5 GB a month per
+  busy shop. That fits Supabase Pro's 100 GB for a pilot. Paths are `{shop}/{piece}/…`, so videos
+  can move to cheaper storage (e.g. Cloudflare R2) later without schema changes.
+- The grid also gets a small sprite (120 px cells, about 40 KB), because 20 full sprites would
+  be too heavy over 3G. The full sprite loads only in the detail view.
+
+## 3. What clients see on share links
+- **Sold pieces** stay on the link with a "Sold" badge and no price. The client sees what happened,
+  instead of a piece silently disappearing. **Reserved pieces** show "Reserved" and no price.
+  Deleted pieces are left out.
+- **Clients never see the internal "update today's rates" warning.** It's an instruction for staff,
+  and showing it would look unprofessional. The link is still honest about the rate:
+  - rates set today: prices, plus "at the gold rate of 18 Nov, 10:05";
+  - rates 1–3 days old: prices labelled **"Indicative, based on the gold rate of {date}"**;
+  - rates older than 3 days: **prices are hidden** ("Ask for today's price"). Karat and weight
+    still show. Gold can move several percent in a few days, and a stale price sent to a client
+    turns into an argument in the shop.
+- The client page shows the **total, karat, weight and rate date, not the making-charge
+  breakdown**. Making charges are the shop's negotiable margin. The full breakdown stays inside the app.
+- Every price on the link says it is confirmed in store, and it includes VAT when the shop has VAT on.
+
+## 4. Rounding
+- Totals on cards, messages, share images and links: **whole AED, rounded half-up** from the
+  full-precision total.
+- The breakdown table in the app shows each line in **fils (2 decimals)** with the exact total,
+  then a final **"Price AED 4,218"** row. If each line were rounded to whole AED, the lines would
+  not add up to the total, and staff would notice.
+- All maths uses decimal arithmetic (`decimal.js`), never floating point. Weights are stored to
+  3 decimals, rates and making charges to 4. Prices are never stored; they are always computed
+  from the newest rates.
+
+## 5. Weight in messages and images
+- Show **gross weight**, the number on the tag and the scale, which is what buyers compare.
+  When a piece has stones, also show the gold weight: "12.40 g (gold 11.20 g)". The price
+  depends on gold weight, and hiding that number would invite disputes.
+
+## 6. 14K rate
+- **No derive ratio for 14K.** The board ratios are not simple purity fractions: 18K is
+  0.7612 of 24K while its purity is 0.75, so each karat carries about a 1–1.5% premium.
+  14/24 = 0.5833 would underprice 14K by roughly that premium. The Dubai board doesn't publish
+  14K, so it is **entered by hand**, labelled "not on the Dubai board".
+- If a shop has no 14K rate, 14K pieces show "Price on request" and the rates screen warns.
+
+## 7. Joining a shop
+- Owners and managers **add a member by phone number** (managers can add salespeople only).
+  The person joins automatically when they sign in with that number.
+- The app sends nothing. A "Tell them on WhatsApp" link opens a prefilled message that the
+  inviter sends themselves, the same principle as client sharing.
+- **One person can belong to several shops** (common with family-run multi-shop businesses).
+  The schema supports it, and a shop switcher appears only for people who have more than one shop.
+- A shop always keeps at least one owner (enforced in the database).
+- **Clients stay private to the salesperson, owners included.** If a salesperson leaves the
+  shop, they lose access to that shop's client list in the app. The rows are kept, not deleted,
+  so the decision can be revisited.
+
+## 8. Who can do what
+| | Owner | Manager | Salesperson |
+|---|---|---|---|
+| See all shop pieces | ✓ | ✓ | ✓ |
+| Add pieces | ✓ | ✓ | ✓ |
+| Edit piece details | any | any | own |
+| Mark in stock / reserved / sold | ✓ | ✓ | ✓ (any piece) |
+| Delete pieces | ✓ | ✓ | ✗ |
+| Gold rates, making defaults, VAT, branding | ✓ | ✓ | ✗ |
+| Add/remove salespeople | ✓ | ✓ | ✗ |
+| Add owners/managers, change roles | ✓ | ✗ | ✗ |
+| Clients, shares, view tracking | own only | own only | own only |
+| Analytics | ✓ | ✓ | ✗ |
+
+Gold rates are append-only (no edits or deletes), so the history is a reliable record of who set what and when.
+
+## 9. Hosting and running costs
+- Stay on **Vercel + Supabase**. Both production plans are needed once real shops use the app:
+  Vercel's free Hobby plan forbids commercial use, and Supabase's free tier pauses after a
+  week of inactivity.
+  - Vercel Pro about $20/month, Supabase Pro about $25/month. **About $45/month fixed**, covering many shops.
+  - Twilio Verify: a few US cents per sign-in. Sessions last weeks, so this stays small.
+  - Claude API: about 1–2 US cents per AI fill (estimate; measured in step 4).
+- Free tiers are fine for development and staging.
+- Costs are kept down by: no paid image transformations (the phone makes its own thumbnails),
+  no web fonts (Android already has Noto for all four scripts), and analytics in Postgres
+  instead of a paid tool.
+- Cloudflare would be cheaper still but adds deployment friction for a team with no tech staff.
+  We can revisit at scale.
+
+## 10. AI model
+- `claude-opus-5-5` by default, the most capable current model, because reading a scale display
+  and karat stamps accurately is the point of the feature. The model is set by an environment
+  variable (`ANTHROPIC_MODEL`).
+- In step 4 I'll build a small test set of real photos so a cheaper model can be compared on
+  accuracy before anyone switches. Choosing a cheaper model is your call, made on measured results.
+- Refusals fall back to another model on the server automatically.
+
+## 11. The 15-second capture target
+- Saving never waits for the AI. The AI runs while the user picks karat and category.
+- **Weight and karat need an explicit tap to confirm** when the AI filled them, because they set
+  the price. Name, category and descriptions are confirmed by pressing Save.
+- Karat and gross weight are required to save. Offline, the AI is skipped and the user types the
+  weight from the scale; they can run "AI fill" later from the piece.
+- Pieces get their id on the phone, so capture works offline. The readable SKU (`ALF-0042`,
+  sequential per shop and never reused) is assigned when the piece reaches the server.
+
+## 12. Smaller choices
+- **i18n:** a small typed dictionary instead of a library. The language is stored in a cookie
+  and the user's profile, not in the URL, which suits an installed app. Arabic sets `dir="rtl"`
+  and layouts use logical CSS properties. A unit test checks that every language has every key
+  and placeholder. **The Arabic, Hindi and Malayalam strings need review by native speakers before launch.**
+- **Share links:** 128-bit random tokens; the page is `noindex` and `no-referrer`. Views are logged
+  at most once per visitor per 30 minutes, and the salesperson's own views are not counted.
+  Expiry options: 1, 7 (default) or 30 days; links can be revoked.
+- **Public pages** read through server code that checks the token and expiry, returns only
+  those pieces, and signs image URLs. Anonymous users have no table access at all.
+- **Analytics** live in an `events` table. Only owners and managers can read it.
+  `share_viewed` can only be written by the server.

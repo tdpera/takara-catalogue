@@ -1,4 +1,5 @@
-import type { Membership } from "@/lib/session";
+import { requireShop, type Membership } from "@/lib/session";
+import { QueueStatus } from "./QueueStatus";
 import { LanguagePicker } from "./LanguagePicker";
 import { NavTabs } from "./NavTabs";
 import { RatesBanner } from "./RatesBanner";
@@ -13,6 +14,7 @@ export async function AppHeader({
   current: Membership;
   onRatesPage?: boolean;
 }) {
+  const { user } = await requireShop();
   return (
     <>
       <header className="border-b border-line bg-surface">
@@ -24,6 +26,7 @@ export async function AppHeader({
           ) : (
             <p className="me-auto min-w-0 truncate font-display text-xl">{current.shop.name}</p>
           )}
+          <QueueStatus userId={user.id} />
           <LanguagePicker />
         </div>
         <NavTabs />

@@ -3,11 +3,14 @@ import "./globals.css";
 import { I18nProvider } from "@/i18n/client";
 import { dirFor } from "@/i18n";
 import { getLocale } from "@/i18n/server";
+import { ServiceWorker } from "@/components/ServiceWorker";
 
 export const metadata: Metadata = {
   title: { default: "Souq Catalogue", template: "%s · Souq Catalogue" },
   description: "Fast catalogues for gold and jewellery sellers.",
   applicationName: "Souq Catalogue",
+  appleWebApp: { capable: true, title: "Souq", statusBarStyle: "default" },
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
@@ -25,6 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} dir={dirFor(locale)}>
       <body className="min-h-dvh antialiased">
         <I18nProvider locale={locale}>{children}</I18nProvider>
+        <ServiceWorker />
       </body>
     </html>
   );

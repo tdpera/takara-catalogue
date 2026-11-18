@@ -160,3 +160,33 @@ Gold rates are append-only (no edits or deletes), so the history is a reliable r
 - **Price check:** the rates screen has a calculator anyone can use to quote a price from the
   current rates without saving a piece. The same breakdown component will be reused on the piece
   detail screen in step 5.
+
+## 14. Capture and uploads (step 3)
+- **Saving never touches the network.** "Save piece" writes the piece, photo and spin into the
+  phone's upload queue (IndexedDB) and clears the form for the next piece. The queue uploads in
+  the background and survives closing the app, bad Wi-Fi and phone restarts.
+- **Upload order:** the piece's details first (a few hundred bytes, so they're safe on the server
+  within seconds), then photo + thumbnail, then spin sprites, then the original video. Each step
+  is recorded, so a dropped connection resumes where it stopped, and repeated uploads are harmless.
+- **Retries** back off from 2 s to 5 min, and restart straight away when the phone comes back online.
+  Rejected pieces and expired sessions stop and show in the header so the user can act on them.
+- **Uploads use signed URLs**, created by the server for paths it builds itself
+  (`{shop}/{piece}/{kind}-{id}`), checked against storage RLS. The browser never loads the
+  Supabase client, keeping the capture screen at 7 kB.
+- **Photos** are resized on the phone, in a background worker, to 1600 px (JPEG quality 0.88) plus a
+  480 px thumbnail. Nothing else is changed: no filters or colour adjustment. Re-encoding also
+  removes EXIF data such as GPS location.
+- **Karat, category and making charge stay set** between pieces, because new stock tends to
+  arrive in batches. A second similar piece needs only a photo and a weight. The name is
+  optional (default "22K Bangle"); AI naming arrives in step 4.
+- **Pieces can be saved before rates are set**; they're priced as soon as rates exist.
+- **Offline:** a service worker keeps the app's files and last-opened pages, so the capture screen
+  opens with no connection. Cached pages are cleared on sign-out, and the user is warned if
+  uploads are still pending.
+- **Videos** upload as one request (not resumable yet). With the Wi-Fi-first rule this is fine; if
+  shops record long clips on poor Wi-Fi, switch to Supabase resumable (TUS) uploads.
+  **Supabase's free plan limits files to 50 MB**; the bucket allows 100 MB, which needs the Pro plan.
+- **Images are served through signed URLs** (private bucket). That's correct but defeats browser
+  caching; step 5 will decide between this and unguessable public paths for catalogue speed.
+- A SKU can be skipped (never duplicated) if a piece is saved twice at the same instant after a
+  dropped response; the database guarantees uniqueness.

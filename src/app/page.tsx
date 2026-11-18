@@ -7,6 +7,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { Filters } from "@/components/catalogue/Filters";
 import { Grid } from "@/components/catalogue/Grid";
 import { btn, btnLink, btnPrimary } from "@/components/ui";
+import { EmptyState } from "@/components/EmptyState";
+import { IconPlus } from "@/components/icons";
 
 export default async function CataloguePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { memberships, current } = await requireShop();
@@ -18,32 +20,31 @@ export default async function CataloguePage({ searchParams }: { searchParams: Pr
   return (
     <>
       <AppHeader memberships={memberships} current={current} />
-      <main className="mx-auto max-w-5xl space-y-4 px-4 pt-4 pb-28">
+      <main id="main" className="mx-auto max-w-5xl space-y-4 px-4 pt-4 pb-28">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold">{t("catalogue.title")}</h1>
+          <h1 className="font-display text-[1.75rem] leading-tight">{t("catalogue.title")}</h1>
           <Link href="/add" className={btnPrimary}>
-            <span aria-hidden="true">＋</span> {t("home.addPiece")}
+            <IconPlus size={18} className="stroke-[2.4]" /> {t("home.addPiece")}
           </Link>
         </div>
         {(total > 0 || filtered) && <Filters f={f} />}
 
-        <p className="num text-sm text-muted" aria-live="polite">
+        <p className="text-sm text-muted" aria-live="polite">
           {cards.length < total ? t("catalogue.showing", { shown: cards.length, count: total }) : t("home.pieces", { count: total })}
         </p>
 
         {cards.length === 0 ? (
           filtered ? (
-            <div className="rounded-2xl border border-dashed border-line p-8 text-center">
-              <p className="font-medium">{t("catalogue.noMatch")}</p>
-              <Link href="/" className={btnLink}>{t("catalogue.clear")}</Link>
-            </div>
+            <EmptyState title={t("catalogue.noMatch")} action={<Link href="/" className={btnLink}>{t("catalogue.clear")}</Link>} />
           ) : (
-            <div className="rounded-2xl border border-dashed border-line p-8 text-center">
-              <p className="mb-4 text-muted">{t("home.empty")}</p>
-              <Link href="/add" className={btnPrimary + " min-h-14 px-6 text-lg"}>
-                <span aria-hidden="true">＋</span> {t("home.addPiece")}
-              </Link>
-            </div>
+            <EmptyState
+              title={t("home.empty")}
+              action={
+                <Link href="/add" className={btnPrimary + " mt-1 min-h-14 px-6 text-lg"}>
+                  <IconPlus className="stroke-[2.4]" /> {t("home.addPiece")}
+                </Link>
+              }
+            />
           )
         ) : (
           <Grid shopId={current.shop_id} cards={cards} />

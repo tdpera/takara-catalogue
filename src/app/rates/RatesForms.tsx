@@ -96,8 +96,8 @@ export function RatesForm({ initial, current }: { initial: Values; current: Rate
         const describedBy = [k === 14 ? `${id}-hint` : null, err ? `${id}-err` : null].filter(Boolean).join(" ") || undefined;
         return (
           <div key={k}>
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-36 flex-1">
                 <label htmlFor={id} className={label}>
                   {k}K <span className="font-normal text-muted">· {t("rates.perGram")}</span>
                 </label>
@@ -114,7 +114,7 @@ export function RatesForm({ initial, current }: { initial: Values; current: Rate
                 />
               </div>
               {k === 24 && (
-                <button type="button" className={btn} onClick={derive}>
+                <button type="button" className={btn + " shrink-0"} onClick={derive}>
                   {t("rates.derive")}
                 </button>
               )}

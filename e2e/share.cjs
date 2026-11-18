@@ -1,4 +1,4 @@
-const { sql, TMP } = require('./lib.cjs');
+const { sql, TMP, visible, until } = require('./lib.cjs');
 const { chromium, devices } = require('playwright');
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -25,6 +25,7 @@ async function login(page, local) {
 const queueGone = (p, ms = 90000) => p.waitForFunction(() => !document.querySelector('[aria-controls="queue-panel"]'), null, { timeout: ms });
 async function capture(p, { karat, category, weight, video, name }) {
   await p.goto(base + '/add'); await p.waitForLoadState('networkidle');
+  await p.locator('form[data-ready]').waitFor();
   await p.locator('input[type=file][accept="image/*"]').setInputFiles(`${M}/scale-photo-12mp.jpg`);
   await p.getByText(/Filled from the photo/).waitFor({ timeout: 20000 });
   await radio(p, karat); await radio(p, category);
@@ -65,14 +66,14 @@ async function capture(p, { karat, category, weight, video, name }) {
 
   // ---------- compose
   await p.goto(base + '/'); await p.waitForLoadState('networkidle');
-  const cardPrice = async (name) => (await p.locator('main ul > li', { hasText: name }).locator('p.num').last().innerText()).trim();
+  const cardPrice = async (name) => (await p.locator('main ul > li', { hasText: name }).locator('p.font-display span').innerText()).trim();
   const bangleCatalogue = await cardPrice('Rope bangle');
   const earCatalogue = await cardPrice('Jhumka earrings');
   for (const nm of ['Rope bangle', 'Jhumka earrings', 'Box chain']) await p.getByRole('button', { name: new RegExp(`Select ${nm}`) }).click();
   await p.getByRole('button', { name: 'Share' }).click();
   await p.waitForURL(/\/share\?ids=/);
-  check('Share opens the composer with the selection', await p.getByRole('heading', { name: 'Pieces (2)' }).isVisible());
-  check('sold pieces are left out, and it says so', await p.getByText('Sold pieces left out: 1.').isVisible());
+  check('Share opens the composer with the selection', await visible(p.getByRole('heading', { name: 'Pieces (2)' })));
+  check('sold pieces are left out, and it says so', await visible(p.getByText('Sold pieces left out: 1.')));
   const msg = () => p.locator('#sh-message').inputValue();
   let m = await msg();
   check('English template lists karat, weight and the catalogue price', m.includes(`1. Rope bangle: 22K, 24.35 g, ${bangleCatalogue}`) && m.includes(`2. Jhumka earrings: 18K, 8.10 g, ${earCatalogue}`), m.split('\n')[2]);
@@ -143,11 +144,11 @@ async function capture(p, { karat, category, weight, video, name }) {
   const c = await cc.newPage();
   c.on('pageerror', e => errors.push('client: ' + e.message));
   await c.goto(link); await c.waitForLoadState('networkidle');
-  check("opens in the client's language (Arabic, right-to-left)", (await c.locator('[dir=rtl][lang=ar]').count()) > 0 && await c.getByRole('heading', { name: 'مختارة لك' }).isVisible());
-  check('shop name and both pieces, in order', await c.getByText('Al Fahidi Jewellers').first().isVisible() && (await c.locator('main ul > li h2').allInnerTexts()).join('|') === 'Rope bangle|Jhumka earrings');
-  const pubPrice = (await c.locator('main ul > li').first().locator('span.num.text-xl').innerText()).trim();
+  check("opens in the client's language (Arabic, right-to-left)", (await c.locator('[dir=rtl][lang=ar]').count()) > 0 && await visible(c.getByRole('heading', { name: 'مختارة لك' })));
+  check('shop name and both pieces, in order', await visible(c.getByText('Al Fahidi Jewellers').first()) && (await c.locator('main ul > li h2').allInnerTexts()).join('|') === 'Rope bangle|Jhumka earrings');
+  const pubPrice = (await c.locator('main ul > li').first().locator('span.font-display').innerText()).trim();
   check('live price matches the catalogue', pubPrice === bangleCatalogue, pubPrice);
-  check('spin viewer for the piece with a spin', await c.getByRole('slider').first().isVisible());
+  check('spin viewer for the piece with a spin', await visible(c.getByRole('slider').first()));
   const html = await c.content();
   check('no client name, phone or message on the page', !html.includes('Fatima') && !html.includes('4567') && !html.includes('مرحبًا'));
   check('not indexed by search engines', /<meta name="robots" content="noindex, nofollow/.test(html));
@@ -159,7 +160,7 @@ async function capture(p, { karat, category, weight, video, name }) {
   check('share_viewed event', sql(`select count(*) from events where name='share_viewed' and props->>'share_id'='${shareId}'`) === '1');
   await shot(c, 'public-ar', true);
   await c.goto(link + '?lang=en'); await c.waitForLoadState('networkidle');
-  check('client can switch language', await c.getByRole('heading', { name: 'Selected for you' }).isVisible());
+  check('client can switch language', await visible(c.getByRole('heading', { name: 'Selected for you' })));
 
   // Link preview robot and the salesperson: not counted
   const bot = await browser.newContext({ userAgent: 'WhatsApp/2.24.25.76 A' });
@@ -177,9 +178,9 @@ async function capture(p, { karat, category, weight, video, name }) {
   await p.getByText("Today's rates are saved").waitFor();
   sql("update pieces set status='sold' where name='Jhumka earrings'");
   await c.goto(link + '?lang=en'); await c.waitForLoadState('networkidle');
-  const pub2 = (await c.locator('main ul > li').first().locator('span.num.text-xl').innerText()).trim();
+  const pub2 = (await c.locator('main ul > li').first().locator('span.font-display').innerText()).trim();
   check('price follows the new gold rate', pub2 !== bangleCatalogue, `${bangleCatalogue} → ${pub2}`);
-  check('a piece sold since shows as Sold, without a price', await c.locator('main ul > li').nth(1).getByText('Sold').isVisible());
+  check('a piece sold since shows as Sold, without a price', await visible(c.locator('main ul > li').nth(1).getByText('Sold')));
 
   // ---------- shares list
   await p.goto(base + '/shares'); await p.waitForLoadState('networkidle');
@@ -190,9 +191,9 @@ async function capture(p, { karat, category, weight, video, name }) {
   await card.getByRole('button', { name: 'Turn off link' }).click();
   await card.getByText('Link turned off').waitFor();
   await c.goto(link); await c.waitForLoadState('networkidle');
-  check('a turned-off link shows only "expired"', await c.getByText('This link has expired.').isVisible() && !(await c.content()).includes('Rope bangle'));
+  check('a turned-off link shows only "expired"', await visible(c.getByText('This link has expired.')) && !(await c.content()).includes('Rope bangle'));
   await c.goto(base + '/s/' + 'A'.repeat(22));
-  check('unknown link: not found, in all four languages', await c.getByText("This link doesn't exist.").isVisible() && await c.getByText('هذا الرابط غير موجود.').isVisible());
+  check('unknown link: not found, in all four languages', await visible(c.getByText("This link doesn't exist.")) && await visible(c.getByText('هذا الرابط غير موجود.')));
 
   // ---------- clients
   await p.goto(base + '/clients'); await p.waitForLoadState('networkidle');
@@ -209,9 +210,9 @@ async function capture(p, { karat, category, weight, video, name }) {
   const shop = sql("select id from shops where name='Al Fahidi Jewellers'");
   sql(`insert into shop_members (shop_id, user_id, role) values ('${shop}', '${sales}', 'salesperson')`);
   await s.goto(base + '/clients'); await s.waitForLoadState('networkidle');
-  check("a colleague doesn't see your clients", await s.getByText('No clients yet').isVisible());
+  check("a colleague doesn't see your clients", await visible(s.getByText('No clients yet')));
   await s.goto(base + '/shares'); await s.waitForLoadState('networkidle');
-  check("a colleague doesn't see your shares", await s.getByText('No shares yet').isVisible());
+  check("a colleague doesn't see your shares", await visible(s.getByText('No shares yet')));
 
   check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();

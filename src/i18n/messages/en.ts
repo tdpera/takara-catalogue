@@ -1,7 +1,10 @@
 // English is the source language. Every other locale must provide the same keys (checked by TypeScript).
 const en = {
-  app: { name: "Souq Catalogue" },
+  app: { name: "Souq Catalogue", tagline: "Your shop's catalogue, priced at today's gold rate." },
   common: {
+    skip: "Skip to content",
+    retry: "Try again",
+    notFound: "This page doesn't exist.",
     save: "Save",
     cancel: "Cancel",
     back: "Back",
@@ -74,6 +77,8 @@ const en = {
     setAtBy: "Set {time} by {name}",
     noneYet: "No gold rates have been set yet.",
     bannerToday: "Today's gold rates, set at {time}.",
+    stripToday: "Today {time}",
+    stripLabel: "Today's gold rates, AED per gram",
     bannerStale: "Gold rates aren't from today. Prices are using rates from {date}.",
     bannerMissing: "Gold rates haven't been set, so prices can't be shown.",
     updateNow: "Update today's rates",

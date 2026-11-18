@@ -11,7 +11,7 @@ export function LanguagePicker() {
     <label className="inline-flex items-center gap-2 text-sm">
       <span className="sr-only">{t("nav.language")}</span>
       <select
-        className="min-h-11 rounded-xl border border-line bg-surface px-2 text-ink"
+        className="min-h-11 rounded-full border border-line bg-paper px-3 text-ink"
         value={locale}
         disabled={pending}
         aria-label={t("nav.language")}

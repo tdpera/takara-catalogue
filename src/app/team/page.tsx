@@ -45,8 +45,8 @@ export default async function TeamPage() {
   return (
     <>
       <AppHeader memberships={memberships} current={current} />
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-6">
-        <h1 className="text-2xl font-semibold">{t("team.title")}</h1>
+      <main id="main" className="mx-auto max-w-3xl space-y-6 px-4 py-6">
+        <h1 className="font-display text-[1.75rem] leading-tight">{t("team.title")}</h1>
 
         <section className={card}>
           <NameForm initial={me?.display_name ?? ""} />

@@ -12,6 +12,7 @@ import { KARATS } from "@/lib/pricing";
 import { CATEGORIES } from "@/lib/ai/shared";
 import { cleanQuery, filterHref, STATUSES, type Filters as F } from "@/lib/catalogue-filters";
 import { input } from "@/components/ui";
+import { IconSearch } from "@/components/icons";
 
 function Chip({ href, on, children }: { href: string; on: boolean; children: React.ReactNode }) {
   return (
@@ -20,7 +21,7 @@ function Chip({ href, on, children }: { href: string; on: boolean; children: Rea
       scroll={false}
       prefetch={false}
       aria-current={on ? "true" : undefined}
-      className={`inline-flex min-h-10 shrink-0 items-center rounded-full border px-3 text-sm whitespace-nowrap ${on ? "border-ink bg-ink font-semibold text-paper" : "border-line bg-surface"}`}
+      className={`inline-flex min-h-10 shrink-0 items-center rounded-full border px-3.5 text-sm whitespace-nowrap transition-colors ${on ? "border-ink bg-ink font-semibold text-paper" : "border-line bg-surface hover:border-muted/60"}`}
     >
       {children}
     </Link>
@@ -29,7 +30,7 @@ function Chip({ href, on, children }: { href: string; on: boolean; children: Rea
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div role="group" aria-label={label} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+    <div role="group" aria-label={label} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
       {children}
     </div>
   );
@@ -42,8 +43,15 @@ export function Filters({ f }: { f: F }) {
   const [pending, start] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Back/forward or a chip changed the URL: show its search text.
-  useEffect(() => setQ(f.q), [f.q]);
+  // The search text we last put in the URL. When the URL catches up with it (results for an
+  // earlier keystroke arriving on a slow connection), keep what's in the box: the user may have
+  // typed more since. Only a change from elsewhere (back button, a chip, Clear) replaces it.
+  const pushed = useRef<string | null>(null);
+  useEffect(() => {
+    if (pushed.current !== null && f.q === pushed.current) return;
+    pushed.current = null;
+    setQ(f.q);
+  }, [f.q]);
 
   function search(value: string, now = false) {
     setQ(value);
@@ -51,6 +59,7 @@ export function Filters({ f }: { f: F }) {
     const go = () => {
       const clean = cleanQuery(value);
       if (clean === f.q) return;
+      pushed.current = clean;
       start(() => router.replace(filterHref(f, { q: clean }), { scroll: false }));
     };
     if (now) go();
@@ -78,10 +87,11 @@ export function Filters({ f }: { f: F }) {
           autoComplete="off"
           maxLength={60}
           placeholder={t("catalogue.search")}
-          className={input + " pe-24"}
+          className={input + " ps-10 pe-24"}
           value={q}
           onChange={(e) => search(e.target.value)}
         />
+        <IconSearch size={18} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted" />
         {f.category && <input type="hidden" name="category" value={f.category} />}
         {f.karat && <input type="hidden" name="karat" value={f.karat} />}
         {f.status && <input type="hidden" name="status" value={f.status} />}
@@ -97,7 +107,7 @@ export function Filters({ f }: { f: F }) {
           </Chip>
         ))}
       </Row>
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
         <div role="group" aria-label={t("catalogue.filterKarat")} className="flex shrink-0 gap-2">
         <Chip href={filterHref(f, { karat: null })} on={!f.karat}>{t("catalogue.allKarats")}</Chip>
         {KARATS.map((k) => (

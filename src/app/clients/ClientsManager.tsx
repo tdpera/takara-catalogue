@@ -6,6 +6,8 @@ import type { ClientRow } from "@/lib/share-data";
 import { btn, btnPrimary } from "@/components/ui";
 import { ClientForm } from "@/app/share/ShareComposer";
 import { deleteClient } from "@/app/share/actions";
+import { IconPlus } from "@/components/icons";
+import { EmptyState } from "@/components/EmptyState";
 
 export function ClientsManager({ shopId, initial }: { shopId: string; initial: (ClientRow & { phoneDisplay?: string | null })[] }) {
   const { t } = useT();
@@ -21,10 +23,10 @@ export function ClientsManager({ shopId, initial }: { shopId: string; initial: (
         <ClientForm shopId={shopId} onSaved={upsert} onCancel={() => setEditing(null)} />
       ) : (
         <button type="button" className={btnPrimary} onClick={() => setEditing("new")}>
-          <span aria-hidden="true">＋</span> {t("clients.add")}
+          <IconPlus size={18} className="stroke-[2.4]" /> {t("clients.add")}
         </button>
       )}
-      {clients.length === 0 && editing !== "new" && <p className="text-muted">{t("clients.empty")}</p>}
+      {clients.length === 0 && editing !== "new" && <EmptyState title={t("clients.empty")} />}
       <ul className="space-y-3">
         {clients.map((c) =>
           editing === c.id ? (
@@ -32,12 +34,16 @@ export function ClientsManager({ shopId, initial }: { shopId: string; initial: (
               <ClientForm shopId={shopId} initial={c} onSaved={upsert} onCancel={() => setEditing(null)} />
             </li>
           ) : (
-            <li key={c.id} className="space-y-1 rounded-2xl border border-line bg-surface p-4">
+            <li key={c.id} className="space-y-1 rounded-2xl border border-line bg-surface p-4 shadow-card">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="font-semibold">{c.name}</p>
                 <p className="text-sm text-muted">{LOCALE_NAMES[c.language]}</p>
               </div>
-              {c.phone && <p dir="ltr" className="num text-start text-sm">{c.phoneDisplay ?? c.phone}</p>}
+              {c.phone && (
+                <p className="text-sm">
+                  <span dir="ltr" className="num">{c.phoneDisplay ?? c.phone}</span>
+                </p>
+              )}
               {c.preferences && <p className="text-sm text-muted">{c.preferences}</p>}
               <div className="flex gap-2 pt-1">
                 <button type="button" className={btn} onClick={() => setEditing(c.id)}>{t("clients.edit")}</button>

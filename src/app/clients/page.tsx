@@ -15,8 +15,8 @@ export default async function ClientsPage() {
   return (
     <>
       <AppHeader memberships={memberships} current={current} />
-      <main className="mx-auto max-w-3xl space-y-4 px-4 pt-4 pb-16">
-        <h1 className="text-2xl font-semibold">{t("clients.title")}</h1>
+      <main id="main" className="mx-auto max-w-3xl space-y-4 px-4 pt-4 pb-16">
+        <h1 className="font-display text-[1.75rem] leading-tight">{t("clients.title")}</h1>
         <p className="text-sm text-muted">{t("clients.private")}</p>
         <ClientsManager shopId={current.shop_id} initial={clients.map((c) => ({ ...c, phoneDisplay: c.phone ? formatPhone(c.phone) : null }))} />
       </main>

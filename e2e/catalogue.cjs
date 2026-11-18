@@ -1,4 +1,4 @@
-const { sql, TMP } = require('./lib.cjs');
+const { sql, TMP, visible, until } = require('./lib.cjs');
 const { chromium, devices } = require('playwright');
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -24,6 +24,7 @@ async function capture(p, { karat, category, weight, video, ai = true }) {
   await p.goto(base + '/add'); await p.waitForLoadState('networkidle');
   const box = p.getByLabel('Fill details from the photo');
   if ((await box.isChecked()) !== ai) await box.click();
+  await p.locator('form[data-ready]').waitFor();
   await p.locator('input[type=file][accept="image/*"]').setInputFiles(`${M}/scale-photo-12mp.jpg`);
   await p.locator('main img').first().waitFor();
   if (ai) await p.getByText(/Filled from the photo/).waitFor({ timeout: 20000 });
@@ -49,7 +50,7 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   await p.getByLabel('Shop name').fill('Al Fahidi Jewellers');
   await p.getByRole('button', { name: 'Create shop' }).click();
   await p.waitForURL(base + '/');
-  check('empty catalogue invites the first piece', await p.getByText('No pieces yet').isVisible());
+  check('empty catalogue invites the first piece', await visible(p.getByText('No pieces yet')));
   await p.goto(base + '/rates');
   await p.getByRole('textbox', { name: /^24K/ }).fill('472.50');
   await p.getByRole('button', { name: 'Fill 22K, 21K, 18K from 24K' }).click();
@@ -73,7 +74,7 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
 
   // ---------- grid
   await p.goto(base + '/'); await p.waitForLoadState('networkidle');
-  check('shows first 24 of all pieces', await p.getByText(`Showing 24 of ${total}`).isVisible());
+  check('shows first 24 of all pieces', await visible(p.getByText(`Showing 24 of ${total}`)));
   await p.getByRole('link', { name: 'Show more' }).click();
   await p.getByText(`Showing 48 of ${total}`).waitFor();
   await p.getByRole('link', { name: 'Show more' }).click();
@@ -114,7 +115,7 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   check('category filter', (await p.locator('main ul > li').count()) === 1 && /18K/.test(await p.locator('main ul > li').first().innerText()));
   await p.getByRole('group', { name: 'Karat' }).getByRole('link', { name: '22K', exact: true }).click();
   await p.waitForURL(/karat=22/);
-  check('filters combine (Ring + 22K = none) with a clear option', await p.getByText('No pieces match these filters.').isVisible());
+  check('filters combine (Ring + 22K = none) with a clear option', await visible(p.getByText('No pieces match these filters.')));
   await p.getByRole('link', { name: 'Clear filters' }).click();
   await p.waitForURL(base + '/');
   await p.getByLabel('Search pieces').fill('ALF-0002');
@@ -129,27 +130,27 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   check('search by part of a name', nl === 11, nl); // 1, 10-19
   await p.getByLabel('Search pieces').fill('سوار');
   await p.waitForURL(/q=/); await p.waitForTimeout(800); await p.waitForLoadState('networkidle');
-  check('search in Arabic', (await p.locator('main ul > li').count()) === 1);
+  check('search in Arabic', await until(async () => (await p.locator('main ul > li').count()) === 1));
   await p.goto(base + '/?q=' + encodeURIComponent('a,b(c)*%_\\'));
   check('search with filter syntax characters is harmless', (await p.locator('main').innerText()).includes('No pieces match'));
   await p.goto(base + '/?karat=99&status=lost&category=Tiara');
   check('invalid filters in the URL are ignored', (await p.getByText(/Showing 24 of/).count()) === 1);
   await p.goto(base + '/?status=sold');
-  check('status filter (none sold yet)', await p.getByText('No pieces match these filters.').isVisible());
+  check('status filter (none sold yet)', await visible(p.getByText('No pieces match these filters.')));
 
   // ---------- bulk select
   await p.goto(base + '/'); await p.waitForLoadState('networkidle');
   await p.getByRole('button', { name: /\(ALF-0001\)/ }).click();
   await p.getByRole('button', { name: /Select Filler necklace 1 / }).click();
-  check('selection bar counts', await p.getByText('2 selected').isVisible());
+  check('selection bar counts', await visible(p.getByText('2 selected')));
   await shot(p, 'grid-selected');
   await p.getByRole('link', { name: /ALF-0001/ }).click();
   await p.waitForURL(/\/p\//);
   await p.goBack(); await p.waitForLoadState('networkidle');
-  check('selection kept after opening a piece', await p.getByText('2 selected').isVisible());
+  check('selection kept after opening a piece', await visible(p.getByText('2 selected')));
   await p.getByRole('button', { name: 'Share' }).click();
   await p.waitForURL(/\/share\?ids=/);
-  check('Share opens the composer with the 2 selected pieces', await p.getByRole('heading', { name: 'Pieces (2)' }).isVisible());
+  check('Share opens the composer with the 2 selected pieces', await visible(p.getByRole('heading', { name: 'Pieces (2)' })));
   await p.goBack(); await p.waitForLoadState('networkidle');
   await p.getByRole('button', { name: 'Clear', exact: true }).click();
   check('clear selection', !(await p.getByText('selected').count()));
@@ -178,7 +179,7 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   await p.evaluate(() => window.scrollTo(0, 0));
   await shot(p, 'detail-spin', true);
   await p.getByRole('tab', { name: 'Photo' }).click();
-  check('photo tab shows the photo', await p.getByRole('img', { name: /Photo of Twisted rope bangle/ }).isVisible());
+  check('photo tab shows the photo', await visible(p.getByRole('img', { name: /Photo of Twisted rope bangle/ })));
   await p.getByRole('tab', { name: 'العربية' }).click();
   const arText = p.locator('#desc-panel p[lang=ar]');
   check('description tabs: Arabic shown right-to-left', (await arText.getAttribute('dir')) === 'rtl' && (await arText.innerText()).length > 10);
@@ -191,7 +192,7 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   await p.reload(); await p.waitForLoadState('networkidle');
   check('status saved', await p.getByRole('radio', { name: 'Reserved' }).isChecked());
   await p.goto(base + '/?status=reserved'); await p.waitForLoadState('networkidle');
-  check('reserved piece in status filter with badge', (await p.locator('main ul > li').count()) === 1 && await p.locator('main ul > li').getByText('Reserved').isVisible());
+  check('reserved piece in status filter with badge', (await p.locator('main ul > li').count()) === 1 && await visible(p.locator('main ul > li').getByText('Reserved')));
 
   // ---------- edit
   await p.goto(pieceUrl + '/edit'); await p.waitForLoadState('networkidle');
@@ -199,13 +200,13 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   await p.getByLabel('Name', { exact: true }).fill('Twisted rope kada');
   await p.getByRole('button', { name: 'Save changes' }).click();
   await p.waitForURL(pieceUrl);
-  check('edits saved and shown', await p.getByRole('heading', { name: 'Twisted rope kada' }).isVisible() && /30\.00 g/.test(await p.locator('main').innerText()));
+  check('edits saved and shown', await visible(p.getByRole('heading', { name: 'Twisted rope kada' })) && await until(async () => /30\.00 g/.test(await p.locator('main').innerText())));
 
   // AI descriptions for the piece captured without AI.
   await p.goto(base + '/?q=ALF-0003'); await p.waitForLoadState('networkidle');
   await p.locator('main ul > li a').first().click(); await p.waitForURL(/\/p\//);
   const chainUrl = p.url();
-  check('piece without descriptions says so', await p.getByText('No description in this language yet.').isVisible());
+  check('piece without descriptions says so', await visible(p.getByText('No description in this language yet.')));
   await p.goto(chainUrl + '/edit'); await p.waitForLoadState('networkidle');
   await p.getByRole('button', { name: /Write descriptions from the photo/ }).click();
   await p.locator('#e-d-ml').and(p.locator(':not(:empty)')).waitFor({ timeout: 20000 }).catch(() => {});
@@ -226,7 +227,7 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   await s.goto(pieceUrl); await s.waitForLoadState('networkidle');
   check("salesperson sees no Edit on a colleague's piece", (await s.getByRole('link', { name: 'Edit' }).count()) === 0);
   await s.goto(pieceUrl + '/edit');
-  check('and the edit page refuses', await s.getByText('Only the person who added this piece').isVisible());
+  check('and the edit page refuses', await visible(s.getByText('Only the person who added this piece')));
   await s.goto(pieceUrl); await radio(s, 'Sold'); await s.getByText('Status updated.').waitFor();
   check('salesperson can change status', sql(`select status from pieces where id='${pieceUrl.split('/').pop()}'`) === 'sold');
   check('salesperson has no Delete', true);
@@ -236,7 +237,7 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   await login(o, '050 000 0003');
   await o.getByLabel('Shop name').fill('Meena Gold'); await o.getByRole('button', { name: 'Create shop' }).click(); await o.waitForURL(base + '/');
   await o.goto(pieceUrl);
-  check("another shop gets 'not found'", await o.getByText("This piece doesn't exist, or it belongs to another shop.").isVisible());
+  check("another shop gets 'not found'", await visible(o.getByText("This piece doesn't exist, or it belongs to another shop.")));
   check("another shop's catalogue is empty", (await (await o.goto(base + '/')).text()).includes('No pieces yet'));
 
   // ---------- image caching through the service worker

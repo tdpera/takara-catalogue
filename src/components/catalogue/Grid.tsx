@@ -12,6 +12,7 @@ import type { Card } from "@/lib/catalogue";
 import { formatGrams } from "@/lib/format";
 import { SpinViewer } from "@/components/SpinViewer";
 import { btn, btnPrimary } from "@/components/ui";
+import { IconCheck, IconShare, IconTurn } from "@/components/icons";
 
 const KEY = (shop: string) => `souq.selection.${shop}`;
 
@@ -41,7 +42,9 @@ function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; s
   const { t } = useT();
   const statusCls = c.status === "sold" ? "bg-ink text-paper" : "bg-warn-soft text-warn border border-warn";
   return (
-    <li className={`relative overflow-hidden rounded-2xl border bg-surface ${selected ? "border-gold ring-2 ring-gold" : "border-line"}`}>
+    <li
+      className={`group relative overflow-hidden rounded-2xl border bg-surface shadow-card transition duration-200 hover:shadow-lift motion-safe:hover:-translate-y-0.5 ${selected ? "border-gold ring-2 ring-gold" : "border-line"}`}
+    >
       <Link href={`/p/${c.id}`} className="block focus-visible:outline-3 focus-visible:outline-offset-[-3px] focus-visible:outline-[var(--focus)]">
         <div className="relative aspect-square bg-paper">
           {c.photo ? (
@@ -62,8 +65,8 @@ function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; s
           )}
           {c.spin && <SpinViewer mode="card" src={c.spin.src} frames={c.spin.frames} cols={c.spin.cols} label="" className="object-cover" />}
           {c.spin && (
-            <span className="pointer-events-none absolute end-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-xs font-semibold text-white">
-              {t("catalogue.spin360")}
+            <span className="pointer-events-none absolute end-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-xs font-semibold text-white backdrop-blur-sm">
+              <IconTurn size={14} /> {t("catalogue.spin360")}
             </span>
           )}
           {c.status !== "in_stock" && (
@@ -72,15 +75,19 @@ function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; s
             </span>
           )}
         </div>
-        <div className="space-y-0.5 p-3">
-          <h2 className="line-clamp-2 text-sm leading-snug font-semibold [overflow-wrap:anywhere]">{c.name}</h2>
+        <div className="space-y-0.5 px-3 pt-2.5 pb-3">
+          <h2 className="line-clamp-2 text-[15px] leading-snug font-semibold [overflow-wrap:anywhere]">{c.name}</h2>
           <p className="text-xs text-muted">
             <span dir="ltr" className="num">{c.karat}K · {formatGrams(c.gross_g)}</span>
             <span className="sr-only"> · {c.sku}</span>
           </p>
-          <p dir="ltr" className={`num pt-1 text-start text-lg font-semibold ${c.price ? "text-gold" : "text-muted"}`}>
-            {c.price ?? t("catalogue.noPrice")}
-          </p>
+          {c.price ? (
+            <p className="pt-1 font-display text-[1.35rem] leading-tight text-gold">
+              <span dir="ltr">{c.price}</span>
+            </p>
+          ) : (
+            <p className="pt-1 text-sm text-muted">{t("catalogue.noPrice")}</p>
+          )}
         </div>
       </Link>
       {/* Outside the link, so it isn't a control inside a control. */}
@@ -93,9 +100,9 @@ function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; s
       >
         <span
           aria-hidden="true"
-          className={`flex size-7 items-center justify-center rounded-full border-2 text-sm font-bold shadow ${selected ? "border-gold bg-gold text-white" : "border-white bg-black/30 text-transparent"}`}
+          className={`flex size-7 items-center justify-center rounded-full border-2 shadow transition-colors ${selected ? "border-gold bg-gold text-white" : "border-white bg-black/25 text-transparent"}`}
         >
-          ✓
+          <IconCheck size={16} className="stroke-[2.6]" />
         </span>
       </button>
     </li>
@@ -115,7 +122,7 @@ export function Grid({ shopId, cards }: { shopId: string; cards: Card[] }) {
         ))}
       </ul>
       {sel.ids.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgb(0_0_0/0.08)] backdrop-blur">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
             <p className="me-auto font-medium" aria-live="polite">{t("catalogue.selected", { count: sel.ids.length })}</p>
             <button type="button" className={btn} onClick={() => { sel.clear(); setNote(null); }}>
@@ -125,7 +132,7 @@ export function Grid({ shopId, cards }: { shopId: string; cards: Card[] }) {
                 if (sel.ids.length > 24) return setNote("share.tooMany");
                 router.push(`/share?ids=${sel.ids.join(",")}`);
               }}>
-              {t("catalogue.share")}
+              <IconShare size={18} /> {t("catalogue.share")}
             </button>
             {note && <p role="status" className="basis-full text-sm text-muted">{t(note)}</p>}
           </div>

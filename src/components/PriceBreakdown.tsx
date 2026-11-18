@@ -68,8 +68,8 @@ export function PriceBreakdown({ piece, rates, vatEnabled }: { piece: PieceInput
           {row(
             t(p.vatEnabled ? "price.priceInclVat" : "price.price"),
             null,
-            <Num>{formatAED(p.totalWhole)}</Num>,
-            "text-lg font-semibold [&>th]:font-semibold",
+            <span dir="ltr" className="font-display text-[1.6rem] leading-none whitespace-nowrap text-gold">{formatAED(p.totalWhole)}</span>,
+            "bg-gold-soft/70 font-semibold [&>td]:pe-3 [&>td]:align-middle [&>th]:ps-3 [&>th]:align-middle [&>th]:font-semibold",
           )}
         </tbody>
       </table>

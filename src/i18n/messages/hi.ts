@@ -2,8 +2,11 @@ import type { Messages } from "./en";
 
 // Hindi. Needs review by a native speaker before launch.
 const hi: Messages = {
-  app: { name: "सूक कैटलॉग" },
+  app: { name: "सूक कैटलॉग", tagline: "आपकी दुकान का कैटलॉग, आज के सोने के रेट पर।" },
   common: {
+    skip: "सामग्री पर जाएँ",
+    retry: "फिर कोशिश करें",
+    notFound: "यह पेज मौजूद नहीं है।",
     save: "सेव करें",
     cancel: "रद्द करें",
     back: "वापस",
@@ -76,6 +79,8 @@ const hi: Messages = {
     setAtBy: "{name} ने {time} को सेट किया",
     noneYet: "अभी तक सोने के रेट सेट नहीं हुए हैं।",
     bannerToday: "आज के सोने के रेट, {time} पर सेट।",
+    stripToday: "आज {time}",
+    stripLabel: "आज के सोने के रेट, AED प्रति ग्राम",
     bannerStale: "सोने के रेट आज के नहीं हैं। कीमतें {date} के रेट से बन रही हैं।",
     bannerMissing: "सोने के रेट सेट नहीं हैं, इसलिए कीमतें नहीं दिखाई जा सकतीं।",
     updateNow: "आज के रेट अपडेट करें",

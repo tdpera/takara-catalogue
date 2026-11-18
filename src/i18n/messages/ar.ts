@@ -2,8 +2,11 @@ import type { Messages } from "./en";
 
 // Arabic (Gulf/MSA). Needs review by a native speaker before launch.
 const ar: Messages = {
-  app: { name: "كتالوج السوق" },
+  app: { name: "كتالوج السوق", tagline: "كتالوج محلك، بأسعار الذهب اليوم." },
   common: {
+    skip: "انتقل إلى المحتوى",
+    retry: "حاول مجددًا",
+    notFound: "هذه الصفحة غير موجودة.",
     save: "حفظ",
     cancel: "إلغاء",
     back: "رجوع",
@@ -76,6 +79,8 @@ const ar: Messages = {
     setAtBy: "حدّده {name} {time}",
     noneYet: "لم تُحدَّد أسعار الذهب بعد.",
     bannerToday: "أسعار الذهب لليوم، حُدّدت الساعة {time}.",
+    stripToday: "اليوم {time}",
+    stripLabel: "أسعار الذهب اليوم، درهم للغرام",
     bannerStale: "أسعار الذهب ليست لليوم. الأسعار المعروضة تستخدم أسعار {date}.",
     bannerMissing: "لم تُحدَّد أسعار الذهب، لذلك لا يمكن عرض الأسعار.",
     updateNow: "حدّث أسعار اليوم",

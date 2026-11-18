@@ -14,6 +14,8 @@ import { IMAGE_MAX, renderCatalogueImage, shareOrDownload } from "@/lib/share-im
 import { formatDubaiDateTime } from "@/lib/format";
 import { btn, btnLink, btnPrimary, errorText, hint, input, label } from "@/components/ui";
 import { createShare, saveClient, writeWithAi } from "./actions";
+import { IconChat, IconImage, IconLink, IconSparkles, IconX } from "@/components/icons";
+import { EmptyState } from "@/components/EmptyState";
 
 const ERR: Record<string, MessageKey> = {
   rate_limited: "ai.err_rate_limited",
@@ -179,10 +181,7 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
 
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-line p-8 text-center">
-        <p className="mb-3">{t("share.none")}</p>
-        <Link href="/" className={btnLink}>{t("share.toCatalogue")}</Link>
-      </div>
+      <EmptyState title={t("share.none")} action={<Link href="/" className={btnLink}>{t("share.toCatalogue")}</Link>} />
     );
   }
 
@@ -191,7 +190,7 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
       {props.soldLeftOut > 0 && <p className="rounded-xl border border-warn bg-warn-soft p-3 text-sm">{t("share.soldLeftOut", { count: props.soldLeftOut })}</p>}
 
       {/* 1. Pieces */}
-      <section aria-labelledby="sh-pieces" className="rounded-2xl border border-line bg-surface p-3">
+      <section aria-labelledby="sh-pieces" className="rounded-2xl border border-line bg-surface p-4 shadow-card">
         <h2 id="sh-pieces" className="mb-2 font-semibold">{t("share.pieces", { count: items.length })}</h2>
         <ul className="divide-y divide-line">
           {items.map((i) => (
@@ -204,7 +203,9 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{i.name}</p>
-                <p dir="ltr" className="num text-start text-sm text-muted">{i.karat}K · {i.weight} · {i.price ?? "—"}</p>
+                <p className="text-sm text-muted">
+                  <span dir="ltr" className="num">{i.karat}K · {i.weight} · {i.price ?? "—"}</span>
+                </p>
                 {i.status === "reserved" && <p className="text-xs text-warn">{t("status.reserved")}</p>}
               </div>
               <button
@@ -213,7 +214,7 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
                 aria-label={t("share.remove", { name: i.name })}
                 onClick={() => setItems((xs) => xs.filter((x) => x.id !== i.id))}
               >
-                ×
+                <IconX size={20} />
               </button>
             </li>
           ))}
@@ -221,7 +222,7 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
       </section>
 
       {/* 2. Client */}
-      <section aria-labelledby="sh-client" className="space-y-2 rounded-2xl border border-line bg-surface p-3">
+      <section aria-labelledby="sh-client" className="space-y-2 rounded-2xl border border-line bg-surface p-4 shadow-card">
         <h2 id="sh-client" className="font-semibold">
           <label htmlFor="sh-client-select">{t("share.client")}</label>
         </h2>
@@ -258,7 +259,7 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
       </section>
 
       {/* 3. Message */}
-      <section aria-labelledby="sh-msg" className="space-y-2 rounded-2xl border border-line bg-surface p-3">
+      <section aria-labelledby="sh-msg" className="space-y-2 rounded-2xl border border-line bg-surface p-4 shadow-card">
         <h2 id="sh-msg" className="font-semibold">
           <label htmlFor="sh-message">{t("share.message")}</label>
         </h2>
@@ -279,7 +280,7 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
         {stale && <p className="rounded-lg border border-warn bg-warn-soft p-2 text-sm">{t("share.listChanged")}</p>}
         <div className="flex flex-wrap gap-2">
           <button type="button" className={btn} disabled={ai.busy} onClick={() => void runAi()}>
-            <span aria-hidden="true">✨</span> {ai.busy ? t("share.aiWorking") : t("share.writeAi")}
+            <IconSparkles size={18} className="text-gold" /> {ai.busy ? t("share.aiWorking") : t("share.writeAi")}
           </button>
           {source !== "template" && (
             <button type="button" className={btn} onClick={() => { setMessage(template); setSource("template"); setStale(false); setAi({ busy: false, msg: null }); }}>
@@ -291,11 +292,11 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
       </section>
 
       {/* 4. Outputs */}
-      <section aria-labelledby="sh-send" className="space-y-3 rounded-2xl border border-line bg-surface p-3">
+      <section aria-labelledby="sh-send" className="space-y-3 rounded-2xl border border-line bg-surface p-4 shadow-card">
         <h2 id="sh-send" className="font-semibold">{t("share.send")}</h2>
         {!created ? (
           <button type="button" className={btnPrimary + " w-full min-h-12"} disabled={creating} onClick={create}>
-            {creating ? t("share.creating") : t("share.createLink")}
+            <IconLink size={18} /> {creating ? t("share.creating") : t("share.createLink")}
           </button>
         ) : (
           <div className="space-y-3">
@@ -321,9 +322,9 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
               href={whatsappLink(client?.phone, waText)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1f7a4d] px-4 font-semibold text-white"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1f7a4d] px-4 font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-[0.98] motion-reduce:transform-none"
             >
-              {t("share.whatsapp")}
+              <IconChat size={20} /> {t("share.whatsapp")}
             </a>
             <p className={hint}>{t("share.whatsappHint")}</p>
             <a href={created.url} target="_blank" rel="noopener noreferrer" className={btnLink}>{t("share.openLink")}</a>
@@ -333,7 +334,7 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
 
         <div className="border-t border-line pt-3">
           <button type="button" className={btn + " w-full"} disabled={img.busy} onClick={() => void makeImage()}>
-            {img.busy ? t("share.imageWorking") : t("share.image")}
+            <IconImage size={18} /> {img.busy ? t("share.imageWorking") : t("share.image")}
           </button>
           {items.length > IMAGE_MAX && <p className={hint}>{t("share.imageMore", { max: IMAGE_MAX })}</p>}
           <p role="status" className="mt-1 text-sm">{img.msg ? t(img.msg) : ""}</p>

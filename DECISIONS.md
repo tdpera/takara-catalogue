@@ -352,3 +352,44 @@ Gold rates are append-only (no edits or deletes), so the history is a reliable r
 - Possible next features: a logo upload for the share image and page, extending share links,
   replacing a piece's photo or spin, resumable video uploads, and a usage/cost view built on
   `ai_requests` and `events`.
+
+## 19. Debugging pass and visual refresh
+**How it was checked:** every page as owner, salesperson and anonymous visitor, in light, dark,
+Arabic and desktop (76 page views), with an automated accessibility scan (axe), console and
+network errors, and horizontal-overflow checks. Plus a code read for bugs a scan can't see.
+
+**Bugs fixed**
+- Gold rates: the "Fill from 24K" button squeezed the 24K input on phones until its value was
+  cut off. The button now wraps below.
+- Search: on a slow connection, results for an earlier keystroke could reset the search box
+  and lose what had been typed since.
+- Status buttons on the piece page dropped keyboard focus while saving.
+- Edit page: Cancel used the browser's back, which leaves the app if the page was opened from a
+  link. It now returns to the piece.
+- Arabic: prices on cards, figures in the share composer, client phone numbers and rate history
+  were aligned left inside right-to-left layouts.
+- Accessibility: the rates line sat outside the page landmarks; unknown pages showed Next.js's
+  unstyled English 404; not-found pages had no heading. Added a "Skip to content" link and an
+  error screen with Retry (there was none: a failed load showed a blank default page).
+- The public share page queried the database twice per visit (once for the link preview title).
+
+**Visuals, following the prototype**
+- **Fonts:** DM Serif Display for the shop name, page titles and prices, and IBM Plex Mono for
+  weights, rates and amounts, as in the prototype. Both are Latin-only and self-hosted, so
+  Arabic, Hindi and Malayalam keep the phone's own fonts. This revises section 12's "no font
+  files": measured with Lighthouse, preloading both fonts delayed the first photos by about a
+  second on a slow connection. With the serif preloaded and the mono font loaded lazily (one
+  weight), the catalogue scores the same as before the refresh (90–91 against 89–90 on the
+  seeded demo data, run alternately against the previous build).
+- **Header:** the app's mark, the shop name in the serif, and today's rates as chips (24K 472.50,
+  22K 437.39, …) like the prototype's rate strip, wrapping onto a second line on phones so
+  they're all visible.
+- Cards with soft shadows and a slight lift on hover, serif gold prices, a highlighted serif total
+  in the price breakdown, and line icons instead of emoji (which look different on every phone).
+- A designed sign-in and welcome screen, friendly empty states, and loading skeletons, so a tap
+  on 3G shows the page's shape at once instead of nothing.
+
+**Measured after:** accessibility 100 and best practices 100 on every page; performance 88–98
+(catalogue 88–91 with the demo pictures, which are PNGs about three times the size of real
+phone-made JPEG thumbnails); 0 accessibility violations, console errors or overflow in 76 page
+views; all 123 unit, 54 database and 158 browser checks pass.

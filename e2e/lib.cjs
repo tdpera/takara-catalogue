@@ -11,3 +11,21 @@ function sql(q) {
 }
 
 module.exports = { sql, TMP };
+
+/** True once the locator is visible (pages stream in after a loading skeleton). */
+async function visible(locator, timeout = 10000) {
+  return locator.first().waitFor({ state: 'visible', timeout }).then(() => true, () => false);
+}
+
+/** True once fn() returns true, polling (for counts and states that settle after loading). */
+async function until(fn, timeout = 10000) {
+  const end = Date.now() + timeout;
+  for (;;) {
+    try { if (await fn()) return true; } catch {}
+    if (Date.now() > end) return false;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+}
+
+module.exports.visible = visible;
+module.exports.until = until;

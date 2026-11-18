@@ -15,6 +15,7 @@ import { btn, btnPrimary, errorText, hint, input, label } from "@/components/ui"
 import { LOCALE_NAMES } from "@/i18n";
 import { CATEGORIES, DESC_LANGS, type Category, type DescLang, type Descriptions, type AiSuggestions } from "@/lib/ai/shared";
 import { requestAiFill, type AiFillError } from "@/lib/ai/client";
+import { IconCamera, IconSparkles, IconVideo } from "@/components/icons";
 
 // Fields AI fill can suggest. A field the salesperson has edited for this piece is never overwritten.
 type AiField = "name" | "karat" | "category" | "weight" | "descriptions";
@@ -92,6 +93,8 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
   const [saving, setSaving] = useState(false);
   const [online, setOnline] = useState(true);
   const [tried, setTried] = useState(false);
+  // Set once the form is interactive (also lets automated tests wait for it).
+  const [ready, setReady] = useState(false);
   const [descs, setDescs] = useState<Descriptions>({});
   const [aiOn, setAiOn] = useState(true);
   const [ai, setAi] = useState<AiState>({ state: "idle" });
@@ -107,6 +110,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
 
   useEffect(() => {
     readyAt.current = performance.now();
+    setReady(true);
     const s = loadSticky();
     if (s.karat && (KARATS as readonly number[]).includes(s.karat)) setKarat(s.karat);
     if (s.category && (CATEGORIES as readonly string[]).includes(s.category)) setCategory(s.category);
@@ -299,7 +303,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
       : t(PRICE_ERR[price.error], { karat });
 
   return (
-    <form onSubmit={save} noValidate className="space-y-5 pb-28">
+    <form onSubmit={save} noValidate className="space-y-5 pb-28" data-ready={ready || undefined}>
       <div aria-live="polite" className="space-y-2">
         {!online && <p className="rounded-xl border border-warn bg-warn-soft p-3 text-sm">{t("add.offline")}</p>}
         {notice && (
@@ -326,7 +330,11 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
               : "flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gold bg-gold-soft p-4 text-center focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-[var(--focus)]"
           }
         >
-          {!photo && <span aria-hidden="true" className="text-4xl">📷</span>}
+          {!photo && (
+            <span className="flex size-16 items-center justify-center rounded-full bg-surface text-gold shadow-card">
+              <IconCamera size={30} />
+            </span>
+          )}
           <span className={photo ? "" : "text-lg font-semibold"}>
             {photoBusy ? t("add.processing") : photo ? t("add.retake") : t("add.takePhoto")}
           </span>
@@ -379,7 +387,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
         </div>
         {photo && ai.state !== "working" && (ai.state === "idle" ? !aiOn : ai.state === "error" && AI_RETRYABLE.includes(ai.error)) && (
           <button type="button" className={btn} onClick={() => void runAi(photo.full)}>
-            <span aria-hidden="true">✨</span> {t("ai.run")}
+            <IconSparkles size={18} className="text-gold" /> {t("ai.run")}
           </button>
         )}
       </div>
@@ -419,7 +427,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
           <>
             <p className={hint}>{t("add.spinHint")}</p>
             <label className={btn + " mt-2 cursor-pointer focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-[var(--focus)]"}>
-              {t("add.spinAdd")}
+              <IconVideo size={18} /> {t("add.spinAdd")}
               <input
                 type="file"
                 accept="video/*"
@@ -493,7 +501,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
         <div className="mx-auto max-w-3xl space-y-2">
           {error && <p role="alert" className={errorText}>{t(error, { karat: karat ?? "" })}</p>}
           <div className="flex items-center gap-3">
-            <p className="num me-auto min-w-0 truncate font-semibold" dir="auto" aria-live="polite">{priceLine}</p>
+            <p className="me-auto min-w-0 truncate font-semibold tabular-nums" dir="auto" aria-live="polite">{priceLine}</p>
             <button className={btnPrimary + " min-w-36"} disabled={saving || photoBusy || spinPct !== null}>
               {saving ? t("add.saving") : t("add.save")}
             </button>

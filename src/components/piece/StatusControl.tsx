@@ -13,7 +13,7 @@ export function StatusControl({ pieceId, status }: { pieceId: string; status: St
   const [pending, start] = useTransition();
 
   function choose(next: Status) {
-    if (next === value) return;
+    if (next === value || pending) return;
     const before = value;
     setValue(next);
     setMsg(null);
@@ -28,7 +28,7 @@ export function StatusControl({ pieceId, status }: { pieceId: string; status: St
   }
 
   return (
-    <fieldset disabled={pending}>
+    <fieldset aria-busy={pending}>
       <legend className="mb-2 text-sm font-medium">{t("piece.status")}</legend>
       <div className="flex flex-wrap gap-2">
         {STATUSES.map((s) => (
@@ -40,7 +40,7 @@ export function StatusControl({ pieceId, status }: { pieceId: string; status: St
           </label>
         ))}
       </div>
-      <p role="status" className={`mt-2 min-h-5 text-sm ${msg?.ok ? "text-live" : "text-danger"}`}>{msg ? t(msg.key) : ""}</p>
+      <p role="status" className={`mt-2 text-sm empty:mt-0 ${msg?.ok ? "text-live" : "text-danger"}`}>{msg ? t(msg.key) : ""}</p>
     </fieldset>
   );
 }

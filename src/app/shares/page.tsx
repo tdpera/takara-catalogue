@@ -5,6 +5,7 @@ import { getT } from "@/i18n/server";
 import { AppHeader } from "@/components/AppHeader";
 import { btn, btnLink } from "@/components/ui";
 import { SharesList, type ShareRow } from "./SharesList";
+import { EmptyState } from "@/components/EmptyState";
 
 export const metadata: Metadata = { title: "Shares" };
 
@@ -52,16 +53,13 @@ export default async function SharesPage() {
   return (
     <>
       <AppHeader memberships={memberships} current={current} />
-      <main className="mx-auto max-w-3xl space-y-4 px-4 pt-4 pb-16">
+      <main id="main" className="mx-auto max-w-3xl space-y-4 px-4 pt-4 pb-16">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold">{t("shares.title")}</h1>
+          <h1 className="font-display text-[1.75rem] leading-tight">{t("shares.title")}</h1>
           <Link href="/clients" className={btn}>{t("shares.clients")}</Link>
         </div>
         {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-line p-8 text-center">
-            <p className="mb-3">{t("shares.empty")}</p>
-            <Link href="/" className={btnLink}>{t("share.toCatalogue")}</Link>
-          </div>
+          <EmptyState title={t("shares.empty")} action={<Link href="/" className={btnLink}>{t("share.toCatalogue")}</Link>} />
         ) : (
           <SharesList rows={rows} />
         )}

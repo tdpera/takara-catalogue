@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { useT } from "@/i18n/client";
 import type { Spin } from "@/lib/catalogue";
 import { SpinViewer } from "@/components/SpinViewer";
+import { IconTurn } from "@/components/icons";
 
 /** Big spin viewer and the photo, as tabs (the spin first when there is one). */
 export function PieceMedia({ name, photo, spin }: { name: string; photo: { full: string; thumb: string | null } | null; spin: Spin | null }) {
@@ -12,7 +13,7 @@ export function PieceMedia({ name, photo, spin }: { name: string; photo: { full:
   const list = (spin ? ["spin", "photo"] : ["photo"]) as ("spin" | "photo")[];
 
   const frame = (
-    <div className="relative mx-auto aspect-square w-full max-w-[32rem] overflow-hidden rounded-2xl border border-line bg-paper">
+    <div className="relative mx-auto aspect-square w-full max-w-[32rem] overflow-hidden rounded-2xl border border-line bg-paper shadow-card">
       {tab === "spin" && spin ? (
         <>
           {photo?.thumb && (
@@ -28,8 +29,8 @@ export function PieceMedia({ name, photo, spin }: { name: string; photo: { full:
             label={t("piece.spinLabel", { name })}
             frameText={(n, total) => t("piece.frame", { n, total })}
           />
-          <span aria-hidden="true" className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-xs text-white">
-            ↔ {t("piece.dragHint")}
+          <span aria-hidden="true" className="pointer-events-none absolute bottom-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/65 px-3 py-1 text-xs text-white backdrop-blur-sm">
+            <IconTurn size={14} /> {t("piece.dragHint")}
           </span>
         </>
       ) : photo ? (

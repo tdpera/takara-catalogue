@@ -2,8 +2,11 @@ import type { Messages } from "./en";
 
 // Malayalam. Needs review by a native speaker before launch.
 const ml: Messages = {
-  app: { name: "സൂക്ക് കാറ്റലോഗ്" },
+  app: { name: "സൂക്ക് കാറ്റലോഗ്", tagline: "നിങ്ങളുടെ കടയുടെ കാറ്റലോഗ്, ഇന്നത്തെ സ്വർണ്ണ നിരക്കിൽ." },
   common: {
+    skip: "ഉള്ളടക്കത്തിലേക്ക് പോകുക",
+    retry: "വീണ്ടും ശ്രമിക്കുക",
+    notFound: "ഈ പേജ് നിലവിലില്ല.",
     save: "സേവ് ചെയ്യുക",
     cancel: "റദ്ദാക്കുക",
     back: "തിരികെ",
@@ -76,6 +79,8 @@ const ml: Messages = {
     setAtBy: "{name} {time}-ന് സെറ്റ് ചെയ്തു",
     noneYet: "ഇതുവരെ സ്വർണ്ണ നിരക്ക് സെറ്റ് ചെയ്തിട്ടില്ല.",
     bannerToday: "ഇന്നത്തെ സ്വർണ്ണ നിരക്ക്, {time}-ന് സെറ്റ് ചെയ്തു.",
+    stripToday: "ഇന്ന് {time}",
+    stripLabel: "ഇന്നത്തെ സ്വർണ്ണ നിരക്ക്, ഗ്രാമിന് AED",
     bannerStale: "സ്വർണ്ണ നിരക്ക് ഇന്നത്തേതല്ല. വിലകൾ {date}-ലെ നിരക്ക് ഉപയോഗിക്കുന്നു.",
     bannerMissing: "സ്വർണ്ണ നിരക്ക് സെറ്റ് ചെയ്തിട്ടില്ല, അതിനാൽ വില കാണിക്കാനാവില്ല.",
     updateNow: "ഇന്നത്തെ നിരക്ക് പുതുക്കുക",

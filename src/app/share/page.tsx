@@ -22,8 +22,8 @@ export default async function SharePage({ searchParams }: { searchParams: Promis
   return (
     <>
       <AppHeader memberships={memberships} current={current} />
-      <main className="mx-auto max-w-3xl px-4 pt-4 pb-16">
-        <h1 className="mb-4 text-2xl font-semibold">{t("share.title")}</h1>
+      <main id="main" className="mx-auto max-w-3xl px-4 pt-4 pb-16">
+        <h1 className="mb-4 font-display text-[1.75rem] leading-tight">{t("share.title")}</h1>
         <ShareComposer
           shopId={current.shop_id}
           shopName={current.shop.name}

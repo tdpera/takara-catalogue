@@ -7,6 +7,7 @@ import { getShopPricing } from "@/lib/shop-data";
 import { getT } from "@/i18n/server";
 import { AppHeader } from "@/components/AppHeader";
 import { btnLink } from "@/components/ui";
+import { IconBack } from "@/components/icons";
 import { EditForm } from "./EditForm";
 
 export const metadata: Metadata = { title: "Edit piece" };
@@ -27,11 +28,11 @@ export default async function EditPiecePage({ params }: { params: Promise<{ id: 
   return (
     <>
       <AppHeader memberships={memberships} current={current} />
-      <main className="mx-auto max-w-3xl px-4 pt-3 pb-32">
+      <main id="main" className="mx-auto max-w-3xl px-4 pt-3 pb-32">
         <Link href={`/p/${piece.id}`} className={btnLink}>
-          <span aria-hidden="true" className="rtl:rotate-180">←</span>&nbsp;{piece.name}
+          <IconBack size={18} /> {piece.name}
         </Link>
-        <h1 className="mt-2 mb-4 text-2xl font-semibold">
+        <h1 className="mt-2 mb-4 font-display text-[1.75rem] leading-tight">
           {t("edit.title", { sku: piece.sku })}
         </h1>
         {canEdit ? (

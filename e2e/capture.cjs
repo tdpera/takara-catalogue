@@ -1,4 +1,4 @@
-const { sql, TMP } = require('./lib.cjs');
+const { sql, TMP, visible, until } = require('./lib.cjs');
 const { chromium, devices } = require('playwright');
 const { execSync } = require('child_process');
 const M = process.argv[2], OUT = process.argv[3];
@@ -21,6 +21,7 @@ const queueGone = (p, ms = 60000) => p.waitForFunction(() => !document.querySele
 /** One full capture: photo, karat, category, weight, save. Returns timings. */
 async function capture(p, { weight, karat = '22K', category = 'Bangle', video = null }) {
   const t0 = Date.now();
+  await p.locator('form[data-ready]').waitFor();
   await p.locator('input[type=file][accept="image/*"]').setInputFiles(`${M}/scale-photo-12mp.jpg`);
   const tp = Date.now();
   await p.locator('main img').first().waitFor({ timeout: 30000 });
@@ -89,9 +90,8 @@ async function capture(p, { weight, karat = '22K', category = 'Bangle', video = 
 
   // 2. Sticky fields: second piece only needs photo + weight.
   await p.goto(base + '/add');
-  const k = await p.getByRole('radio', { name: '22K', exact: true }).isChecked();
-  const c = await p.getByRole('radio', { name: 'Bangle', exact: true }).isChecked();
-  check('karat and category remembered for the next piece', k && c);
+  const remembered = await until(async () => (await p.getByRole('radio', { name: '22K', exact: true }).isChecked()) && (await p.getByRole('radio', { name: 'Bangle', exact: true }).isChecked()));
+  check('karat and category remembered for the next piece', remembered);
 
   // 3. Mid-range Android: 4× slower CPU, slow 3G network.
   const cdp = await ctx.newCDPSession(p);
@@ -146,14 +146,14 @@ async function capture(p, { weight, karat = '22K', category = 'Bangle', video = 
   await p.reload(); await p.waitForLoadState('networkidle');
   await ctx.setOffline(true);
   const resp = await p.goto(base + '/add').catch(e => null);
-  const offlineOk = await p.getByRole('button', { name: 'Save piece' }).isVisible().catch(() => false);
+  const offlineOk = await visible(p.getByRole('button', { name: 'Save piece' })).catch(() => false);
   check('capture screen opens with no connection (service worker)', offlineOk);
   await ctx.setOffline(false);
 
   // 7. Validation.
   await p.goto(base + '/add');
   await p.getByRole('button', { name: 'Save piece' }).click();
-  check('photo is required', await p.getByText('Take a photo first.').isVisible());
+  check('photo is required', await visible(p.getByText('Take a photo first.')));
 
   const total = sql('select count(*) from pieces'), skus = sql('select string_agg(sku, \',\' order by sku) from pieces');
   check('four pieces, sequential SKUs', skus === 'ALF-0001,ALF-0002,ALF-0003,ALF-0004', skus);

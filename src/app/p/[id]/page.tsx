@@ -13,6 +13,7 @@ import { PieceMedia } from "@/components/piece/PieceMedia";
 import { DescriptionTabs } from "@/components/piece/DescriptionTabs";
 import { StatusControl } from "@/components/piece/StatusControl";
 import { btn, btnLink, card } from "@/components/ui";
+import { IconBack } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Piece" };
 
@@ -30,16 +31,16 @@ export default async function PiecePage({ params }: { params: Promise<{ id: stri
   return (
     <>
       <AppHeader memberships={memberships} current={current} />
-      <main className="mx-auto max-w-5xl px-4 pt-3 pb-16">
+      <main id="main" className="mx-auto max-w-5xl px-4 pt-3 pb-16">
         <Link href="/" className={btnLink}>
-          <span aria-hidden="true" className="rtl:rotate-180">←</span>&nbsp;{t("piece.back")}
+          <IconBack size={18} /> {t("piece.back")}
         </Link>
         <div className="mt-2 grid gap-6 md:grid-cols-2 md:items-start">
           <PieceMedia name={piece.name} photo={piece.photo} spin={piece.spin} />
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <h1 className="text-2xl leading-tight font-semibold [overflow-wrap:anywhere]">{piece.name}</h1>
+              <h1 className="font-display text-[2rem] leading-tight [overflow-wrap:anywhere]">{piece.name}</h1>
               <ul className="flex flex-wrap gap-2 text-sm">
                 <li dir="ltr" className="num rounded-full border border-line bg-surface px-3 py-0.5">{piece.karat}K</li>
                 <li dir="ltr" className="num rounded-full border border-line bg-surface px-3 py-0.5">{formatGrams(piece.gross_g)}</li>
@@ -49,7 +50,7 @@ export default async function PiecePage({ params }: { params: Promise<{ id: stri
                 </li>
               </ul>
               <p className="text-sm text-muted">
-                {t("piece.added")} <span className="num">{formatDubaiDateTime(piece.created_at, locale)}</span>
+                {t("piece.added")} <span>{formatDubaiDateTime(piece.created_at, locale)}</span>
               </p>
             </div>
 

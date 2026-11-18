@@ -56,8 +56,8 @@ export default async function RatesPage() {
   return (
     <>
       <AppHeader memberships={memberships} current={current} onRatesPage />
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-6">
-        <h1 className="text-2xl font-semibold">{t("rates.title")}</h1>
+      <main id="main" className="mx-auto max-w-3xl space-y-6 px-4 py-6">
+        <h1 className="font-display text-[1.75rem] leading-tight">{t("rates.title")}</h1>
 
         <section className={card} aria-labelledby="current-h">
           <h2 id="current-h" className="text-lg font-semibold">{t("rates.current")}</h2>
@@ -124,9 +124,9 @@ export default async function RatesPage() {
                   <p className="text-sm text-muted">
                     {t("rates.setAtBy", { time: formatDubaiDateTime(g.setAt, locale), name: nameOf(g.setBy) })}
                   </p>
-                  <p dir="ltr" className="num mt-1 flex flex-wrap gap-x-4 text-start">
+                  <p className="num mt-1 flex flex-wrap gap-x-4">
                     {KARATS.filter((k) => g.rates.has(k)).map((k) => (
-                      <span key={k}>
+                      <span key={k} dir="ltr">
                         <span className="text-muted">{k}K</span> {formatRate(g.rates.get(k)!)}
                       </span>
                     ))}

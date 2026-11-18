@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useT } from "@/i18n/client";
@@ -10,6 +11,7 @@ import { PriceBreakdown } from "@/components/PriceBreakdown";
 import { AiBadge, Chips } from "@/components/form-bits";
 import { btn, btnPrimary, errorText, hint, input, label } from "@/components/ui";
 import { deletePiece, updatePiece } from "../actions";
+import { IconSparkles } from "@/components/icons";
 
 type Initial = {
   id: string;
@@ -143,7 +145,7 @@ export function EditForm(props: { initial: Initial; shopId: string; canDelete: b
         {props.photoUrl && (
           <div>
             <button type="button" className={btn} disabled={ai.busy} onClick={() => void aiDescriptions()}>
-              <span aria-hidden="true">✨</span> {ai.busy ? t("ai.working") : t("edit.aiDesc")}
+              <IconSparkles size={18} className="text-gold" /> {ai.busy ? t("ai.working") : t("edit.aiDesc")}
             </button>
             <p className={hint}>{t("edit.aiDescHint")}</p>
             <p role="status" className="mt-1 text-sm">{ai.msg ?? ""}</p>
@@ -187,7 +189,7 @@ export function EditForm(props: { initial: Initial; shopId: string; canDelete: b
         <div className="mx-auto max-w-3xl space-y-2">
           {error && <p role="alert" className={errorText}>{t(error)}</p>}
           <div className="flex justify-end gap-3">
-            <button type="button" className={btn} onClick={() => router.back()}>{t("edit.cancel")}</button>
+            <Link href={`/p/${i.id}`} className={btn}>{t("edit.cancel")}</Link>
             <button className={btnPrimary + " min-w-36"} disabled={pending}>{pending ? t("edit.saving") : t("edit.save")}</button>
           </div>
         </div>

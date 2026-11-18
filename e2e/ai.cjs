@@ -1,4 +1,4 @@
-const { sql, TMP } = require('./lib.cjs');
+const { sql, TMP, visible, until } = require('./lib.cjs');
 const { chromium, devices } = require('playwright');
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -21,7 +21,10 @@ async function login(page, local) {
   await page.waitForLoadState('networkidle');
 }
 const queueGone = (p, ms = 60000) => p.waitForFunction(() => !document.querySelector('[aria-controls="queue-panel"]'), null, { timeout: ms });
-const photo = (p) => p.locator('input[type=file][accept="image/*"]').setInputFiles(`${M}/scale-photo-12mp.jpg`);
+const photo = async (p) => {
+  await p.locator('form[data-ready]').waitFor();
+  return p.locator('input[type=file][accept="image/*"]').setInputFiles(`${M}/scale-photo-12mp.jpg`);
+};
 const status = (p) => p.locator('[role=status]').filter({ hasText: /./ }).first();
 async function freshForm(p) { await p.goto(base + '/add'); await p.waitForLoadState('networkidle'); sql('delete from ai_requests'); }
 async function aiOutcome(p, sc, text) {
@@ -64,10 +67,10 @@ async function aiOutcome(p, sc, text) {
   check('name with karat removed', await p.locator('#f-name').inputValue() === 'Twisted rope bangle', await p.locator('#f-name').inputValue());
   const badges = await p.getByText('AI · check').count();
   check('AI fields highlighted (karat, category, weight, name, descriptions)', badges === 6, badges);
-  check('AI-filled name is visible (More details opened)', await p.locator('#f-name').isVisible());
+  check('AI-filled name is visible (More details opened)', await visible(p.locator('#f-name')));
   check('descriptions open with 4 languages', (await p.locator('#d-ar').inputValue()).length > 10 && (await p.locator('#d-ml').inputValue()).length > 10);
   check('Arabic description is right-to-left', await p.locator('#d-ar').getAttribute('dir') === 'rtl');
-  check('price shown from AI weight', /AED/.test(await p.locator('form p.num').last().innerText()));
+  check('price shown from AI weight', /AED/.test(await p.locator('form p.tabular-nums').last().innerText()));
   await p.getByLabel(/Gross weight/).scrollIntoViewIfNeeded();
   await p.evaluate(() => window.scrollTo(0, 0));
   await shot(p, 'ai-filled', true);
@@ -128,7 +131,7 @@ async function aiOutcome(p, sc, text) {
 
   // 6. Error paths, each with a specific message.
   await aiOutcome(p, 'blurry', 'The photo is too blurry or dark to read.');
-  check('unreadable photo: message + retry button', await p.getByRole('button', { name: /Fill from photo/ }).isVisible());
+  check('unreadable photo: message + retry button', await visible(p.getByRole('button', { name: /Fill from photo/ })));
   await shot(p, 'ai-unreadable');
   await aiOutcome(p, 'refusal', 'The AI declined this photo.');
   check('refusal: specific message', true);

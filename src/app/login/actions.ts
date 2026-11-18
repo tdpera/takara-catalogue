@@ -10,7 +10,9 @@ export type VerifyResult = { ok: true } | { error: MessageKey };
 function errorKey(err: { status?: number; code?: string }, stage: "send" | "verify"): MessageKey {
   if (err.status === 429 || err.code?.startsWith("over_")) return "login.tooMany";
   if (stage === "verify") return "login.invalidCode";
-  if (err.code === "validation_failed" || err.code === "sms_send_failed") return "login.invalidPhone";
+  if (err.code === "validation_failed") return "login.invalidPhone";
+  // The SMS/WhatsApp provider refused (bad provider settings, unverified trial number, …).
+  if (err.code === "sms_send_failed") return "login.sendFailed";
   return "common.error";
 }
 

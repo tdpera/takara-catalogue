@@ -27,6 +27,7 @@ const en = {
     changeNumber: "Change number",
     resend: "Send the code again",
     invalidPhone: "That doesn't look like a valid mobile number.",
+    sendFailed: "We couldn't send a code to this number right now. Try again, or ask the shop owner.",
     invalidCode: "That code didn't work. Check it and try again.",
     tooMany: "Too many attempts. Wait a minute and try again.",
   },

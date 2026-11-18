@@ -6,7 +6,7 @@ import { getT } from "@/i18n/server";
 import { AppHeader } from "@/components/AppHeader";
 import { Filters } from "@/components/catalogue/Filters";
 import { Grid } from "@/components/catalogue/Grid";
-import { btn, btnLink, btnPrimary } from "@/components/ui";
+import { btn, btnGold, btnLink } from "@/components/ui";
 import { EmptyState } from "@/components/EmptyState";
 import { IconPlus } from "@/components/icons";
 
@@ -21,17 +21,15 @@ export default async function CataloguePage({ searchParams }: { searchParams: Pr
     <>
       <AppHeader memberships={memberships} current={current} />
       <main id="main" className="mx-auto max-w-5xl space-y-4 px-4 pt-4 pb-28">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="font-display text-[1.75rem] leading-tight">{t("catalogue.title")}</h1>
-          <Link href="/add" className={btnPrimary}>
-            <IconPlus size={18} className="stroke-[2.4]" /> {t("home.addPiece")}
-          </Link>
+        <div className="flex items-end justify-between gap-3 pt-1">
+          <div>
+            <h1 className="font-display text-[2rem] leading-tight">{t("catalogue.title")}</h1>
+            <p className="text-sm text-muted" aria-live="polite">
+              {cards.length < total ? t("catalogue.showing", { shown: cards.length, count: total }) : t("home.pieces", { count: total })}
+            </p>
+          </div>
         </div>
         {(total > 0 || filtered) && <Filters f={f} />}
-
-        <p className="text-sm text-muted" aria-live="polite">
-          {cards.length < total ? t("catalogue.showing", { shown: cards.length, count: total }) : t("home.pieces", { count: total })}
-        </p>
 
         {cards.length === 0 ? (
           filtered ? (
@@ -40,7 +38,7 @@ export default async function CataloguePage({ searchParams }: { searchParams: Pr
             <EmptyState
               title={t("home.empty")}
               action={
-                <Link href="/add" className={btnPrimary + " mt-1 min-h-14 px-6 text-lg"}>
+                <Link href="/add" className={btnGold + " mt-1 min-h-13 px-7 text-base"}>
                   <IconPlus className="stroke-[2.4]" /> {t("home.addPiece")}
                 </Link>
               }

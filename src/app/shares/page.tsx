@@ -55,7 +55,7 @@ export default async function SharesPage() {
       <AppHeader memberships={memberships} current={current} />
       <main id="main" className="mx-auto max-w-3xl space-y-4 px-4 pt-4 pb-16">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="font-display text-[1.75rem] leading-tight">{t("shares.title")}</h1>
+          <h1 className="font-display text-[2rem] leading-tight">{t("shares.title")}</h1>
           <Link href="/clients" className={btn}>{t("shares.clients")}</Link>
         </div>
         {rows.length === 0 ? (

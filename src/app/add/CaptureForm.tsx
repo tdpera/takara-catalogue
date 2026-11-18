@@ -15,7 +15,7 @@ import { btn, btnPrimary, errorText, hint, input, label } from "@/components/ui"
 import { LOCALE_NAMES } from "@/i18n";
 import { CATEGORIES, DESC_LANGS, type Category, type DescLang, type Descriptions, type AiSuggestions } from "@/lib/ai/shared";
 import { requestAiFill, type AiFillError } from "@/lib/ai/client";
-import { IconCamera, IconSparkles, IconVideo } from "@/components/icons";
+import { IconCamera, IconCheck, IconSparkles, IconVideo } from "@/components/icons";
 
 // Fields AI fill can suggest. A field the salesperson has edited for this piece is never overwritten.
 type AiField = "name" | "karat" | "category" | "weight" | "descriptions";
@@ -305,10 +305,13 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
   return (
     <form onSubmit={save} noValidate className="space-y-5 pb-28" data-ready={ready || undefined}>
       <div aria-live="polite" className="space-y-2">
-        {!online && <p className="rounded-xl border border-warn bg-warn-soft p-3 text-sm">{t("add.offline")}</p>}
+        {!online && <p className="rounded-2xl border border-warn/40 bg-warn-soft p-3 text-sm">{t("add.offline")}</p>}
         {notice && (
-          <p className="rounded-xl border border-live p-3 font-medium text-live">
-            ✓ {notice} <span className="font-normal">({t("add.sessionCount", { count })})</span>
+          <p className="flex items-start gap-2 rounded-2xl border border-live/30 bg-surface p-3 font-medium text-live shadow-card">
+            <IconCheck size={20} className="mt-px stroke-[2.4]" />
+            <span>
+              {notice} <span className="font-normal text-muted">({t("add.sessionCount", { count })})</span>
+            </span>
           </p>
         )}
       </div>
@@ -316,7 +319,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
       {/* Photo */}
       <div>
         {photo ? (
-          <div className="relative overflow-hidden rounded-2xl border border-line bg-surface">
+          <div className="relative overflow-hidden rounded-3xl bg-raised shadow-card ring-1 ring-line/70">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={photo.url} alt="" className="aspect-square w-full object-contain" />
           </div>
@@ -327,18 +330,18 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
           className={
             photo
               ? btn + " mt-2 w-full cursor-pointer"
-              : "flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gold bg-gold-soft p-4 text-center focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-[var(--focus)]"
+              : "group flex aspect-[4/3] w-full cursor-pointer md:aspect-[16/7] flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-gold/50 bg-[radial-gradient(ellipse_at_center,var(--gold-soft),var(--surface)_75%)] p-6 text-center transition-colors hover:border-gold focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-[var(--focus)]"
           }
         >
           {!photo && (
-            <span className="flex size-16 items-center justify-center rounded-full bg-surface text-gold shadow-card">
-              <IconCamera size={30} />
+            <span className="mb-1 flex size-[4.5rem] items-center justify-center rounded-full bg-gold-gradient text-[#1c1408] shadow-lift transition-transform group-active:scale-95 motion-reduce:transform-none">
+              <IconCamera size={32} />
             </span>
           )}
-          <span className={photo ? "" : "text-lg font-semibold"}>
+          <span className={photo ? "" : "font-display text-2xl"}>
             {photoBusy ? t("add.processing") : photo ? t("add.retake") : t("add.takePhoto")}
           </span>
-          {!photo && <span className="text-sm text-muted">{t("add.photoHint")}</span>}
+          {!photo && <span className="max-w-xs text-sm text-muted">{t("add.photoHint")}</span>}
           <input
             type="file"
             accept="image/*"
@@ -355,22 +358,32 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
 
       {/* AI fill */}
       <div className="space-y-2">
-        <label className="flex min-h-11 items-start gap-3">
-          <input type="checkbox" className="mt-1 size-5 shrink-0 accent-[var(--gold)]" checked={aiOn} onChange={(e) => setAiPref(e.target.checked)} aria-describedby="ai-hint" />
-          <span>
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl bg-surface p-3.5 shadow-card ring-1 ring-line/70">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gold-soft text-gold">
+            <IconSparkles size={18} />
+          </span>
+          <span className="me-auto">
             <span className="font-medium">{t("ai.toggle")}</span>
             <span id="ai-hint" className="block text-sm text-muted">{t("ai.toggleHint")}</span>
           </span>
+          <input
+            type="checkbox"
+            role="switch"
+            className="relative h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-line transition-colors before:absolute before:start-0.5 before:top-0.5 before:size-6 before:rounded-full before:bg-white before:shadow before:transition-transform checked:bg-ink checked:before:translate-x-5 rtl:checked:before:-translate-x-5 dark:checked:bg-gold"
+            checked={aiOn}
+            onChange={(e) => setAiPref(e.target.checked)}
+            aria-describedby="ai-hint"
+          />
         </label>
         <div role="status" aria-live="polite">
           {ai.state === "working" && (
-            <p className="flex items-center gap-2 rounded-xl border border-line bg-surface p-3">
+            <p className="flex items-center gap-2 rounded-2xl border border-line bg-surface p-3">
               <span aria-hidden="true" className="size-4 animate-spin rounded-full border-2 border-gold border-t-transparent motion-reduce:animate-none" />
               {t("ai.working")}
             </p>
           )}
           {ai.state === "done" && (
-            <div className="space-y-1 rounded-xl border border-warn bg-warn-soft p-3 text-sm">
+            <div className="space-y-1 rounded-2xl border border-warn/40 bg-warn-soft p-3 text-sm">
               {ai.filled.length > 0 ? (
                 <p className="font-medium">{t("ai.filled", { fields: ai.filled.map((f) => t(`ai.field_${f}`)).join(t("ai.listSep")) })}</p>
               ) : (
@@ -382,7 +395,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
             </div>
           )}
           {ai.state === "error" && (
-            <p className="rounded-xl border border-warn bg-warn-soft p-3 text-sm">{t(AI_ERR_KEY[ai.error] ?? "ai.err_error", { seconds: ai.retryAfterS ?? 60 })}</p>
+            <p className="rounded-2xl border border-warn/40 bg-warn-soft p-3 text-sm">{t(AI_ERR_KEY[ai.error] ?? "ai.err_error", { seconds: ai.retryAfterS ?? 60 })}</p>
           )}
         </div>
         {photo && ai.state !== "working" && (ai.state === "idle" ? !aiOn : ai.state === "error" && AI_RETRYABLE.includes(ai.error)) && (
@@ -397,6 +410,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
 
       <div>
         <label htmlFor="weight" className={label}>{t("add.weight")}<AiBadge show={aiFields.has("weight")} /></label>
+        <div className="relative" dir="ltr">
         <input
           ref={weightRef}
           id="weight"
@@ -404,16 +418,18 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
           inputMode="decimal"
           autoComplete="off"
           enterKeyHint="done"
-          className={input + " num text-start text-2xl" + (aiFields.has("weight") ? " border-2 border-warn bg-warn-soft" : "")}
+          className={input + " num min-h-16 pe-12 text-start text-[1.75rem]" + (aiFields.has("weight") ? " border-2 border-warn bg-warn-soft" : "")}
           value={weight}
           onChange={(e) => (own("weight"), setWeight(e.target.value))}
           aria-describedby="weight-hint"
         />
+        <span aria-hidden="true" className="pointer-events-none absolute end-4 top-1/2 -translate-y-1/2 text-lg text-muted">g</span>
+        </div>
         <p id="weight-hint" className={hint}>{t("add.weightHint")}</p>
       </div>
 
       {/* Spin */}
-      <div className="rounded-2xl border border-line bg-surface p-3">
+      <div className="rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70">
         <p className="font-medium">{t("add.spin")}</p>
         {spin ? (
           <div className="mt-2 space-y-2">
@@ -443,7 +459,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
         )}
       </div>
 
-      <details className="rounded-2xl border border-line bg-surface p-3" open={aiFields.has("name") || undefined}>
+      <details className="rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70" open={aiFields.has("name") || undefined}>
         <summary className="min-h-11 cursor-pointer content-center font-medium">
           {t("add.more")}
           <AiBadge show={aiFields.has("name")} />
@@ -471,7 +487,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
         </div>
       </details>
 
-      <details className="rounded-2xl border border-line bg-surface p-3" open={aiFields.has("descriptions") || undefined}>
+      <details className="rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70" open={aiFields.has("descriptions") || undefined}>
         <summary className="min-h-11 cursor-pointer content-center font-medium">
           {t("ai.descriptions")}
           <AiBadge show={aiFields.has("descriptions")} />
@@ -497,7 +513,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
       </details>
 
       {/* Sticky save bar: price and Save always in reach of the thumb. */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgb(0_0_0/0.06)] backdrop-blur-md">
         <div className="mx-auto max-w-3xl space-y-2">
           {error && <p role="alert" className={errorText}>{t(error, { karat: karat ?? "" })}</p>}
           <div className="flex items-center gap-3">

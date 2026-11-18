@@ -5,6 +5,8 @@ import type { MessageKey } from "@/i18n";
 import { STATUSES, type Status } from "@/lib/catalogue-filters";
 import { setStatus } from "@/app/p/[id]/actions";
 
+const DOT: Record<Status, string> = { in_stock: "bg-live", reserved: "bg-warn", sold: "bg-muted" };
+
 /** In stock / reserved / sold. Any member of the shop can change it. */
 export function StatusControl({ pieceId, status }: { pieceId: string; status: Status }) {
   const { t } = useT();
@@ -29,12 +31,13 @@ export function StatusControl({ pieceId, status }: { pieceId: string; status: St
 
   return (
     <fieldset aria-busy={pending}>
-      <legend className="mb-2 text-sm font-medium">{t("piece.status")}</legend>
-      <div className="flex flex-wrap gap-2">
+      <legend className="eyebrow mb-3">{t("piece.status")}</legend>
+      <div className="flex gap-1 rounded-full border border-line bg-raised p-1">
         {STATUSES.map((s) => (
-          <label key={s} className="relative">
+          <label key={s} className="relative flex-1">
             <input type="radio" name="status" className="peer sr-only" checked={value === s} onChange={() => choose(s)} />
-            <span className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-line bg-surface px-4 font-medium peer-checked:border-gold peer-checked:bg-gold-soft peer-checked:font-semibold peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]">
+            <span className="flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full px-3 text-[15px] font-medium text-muted transition-colors peer-checked:bg-surface peer-checked:text-ink peer-checked:shadow-sm peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]">
+              <span aria-hidden="true" className={`size-2 rounded-full ${DOT[s]}`} />
               {t(`status.${s}`)}
             </span>
           </label>

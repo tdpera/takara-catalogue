@@ -13,7 +13,7 @@ export function PieceMedia({ name, photo, spin }: { name: string; photo: { full:
   const list = (spin ? ["spin", "photo"] : ["photo"]) as ("spin" | "photo")[];
 
   const frame = (
-    <div className="relative mx-auto aspect-square w-full max-w-[32rem] overflow-hidden rounded-2xl border border-line bg-paper shadow-card">
+    <div className="relative -mx-4 aspect-square overflow-hidden bg-raised md:mx-auto md:w-full md:max-w-[34rem] md:rounded-3xl md:border md:border-line/70 md:shadow-card">
       {tab === "spin" && spin ? (
         <>
           {photo?.thumb && (
@@ -46,7 +46,7 @@ export function PieceMedia({ name, photo, spin }: { name: string; photo: { full:
   if (list.length === 1) return frame;
   return (
     <div className="space-y-3">
-      <div role="tablist" aria-label={t("piece.mediaTabs")} className="flex justify-center gap-2">
+      <div role="tablist" aria-label={t("piece.mediaTabs")} className="mx-auto flex w-fit gap-1 rounded-full border border-line bg-raised p-1">
         {list.map((k, i) => (
           <button
             key={k}
@@ -66,7 +66,7 @@ export function PieceMedia({ name, photo, spin }: { name: string; photo: { full:
               tabs.current[next]?.focus();
               e.preventDefault();
             }}
-            className={`min-h-10 rounded-full border px-4 text-sm font-medium ${tab === k ? "border-gold bg-gold-soft" : "border-line bg-surface"}`}
+            className={`min-h-9 rounded-full px-5 text-sm font-medium transition-colors ${tab === k ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}
           >
             {k === "spin" ? t("piece.spinTab") : t("piece.photoTab")}
           </button>

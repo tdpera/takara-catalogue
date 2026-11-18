@@ -4,6 +4,7 @@ import { useT } from "@/i18n/client";
 import { formatDubaiDateTime } from "@/lib/format";
 import { btn } from "@/components/ui";
 import { revokeShare } from "@/app/share/actions";
+import { Avatar } from "@/components/Avatar";
 
 export type ShareRow = {
   id: string;
@@ -26,12 +27,15 @@ function Row({ r }: { r: ShareRow }) {
   const opened =
     r.views === 0 ? t("shares.notOpened") : r.views === 1 ? t("shares.openedOnce", { date: when(r.lastView!) }) : t("shares.opened", { count: r.views, date: when(r.lastView!) });
   return (
-    <li className="space-y-2 rounded-2xl border border-line bg-surface p-4 shadow-card">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-semibold">{r.client ?? t("shares.noClient")}</p>
-        <p className="text-sm text-muted">{t("shares.pieces", { count: r.pieces })}</p>
+    <li className="space-y-3 rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70">
+      <div className="flex items-center gap-3">
+        <Avatar name={r.client} size={44} />
+        <div className="me-auto min-w-0">
+          <p className="truncate font-semibold">{r.client ?? t("shares.noClient")}</p>
+          <p className="text-sm text-muted">{t("shares.pieces", { count: r.pieces })}</p>
+        </div>
       </div>
-      <p className={`flex items-center gap-2 font-medium ${r.views > 0 ? "text-live" : "text-muted"}`}>
+      <p className={`flex w-fit items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${r.views > 0 ? "bg-live/10 text-live" : "bg-raised text-muted"}`}>
         <span aria-hidden="true" className={`size-2.5 shrink-0 rounded-full ${r.views > 0 ? "bg-live shadow-[0_0_0_3px] shadow-live/20" : "border-2 border-muted"}`} />
         {opened}
       </p>

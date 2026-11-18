@@ -393,3 +393,31 @@ network errors, and horizontal-overflow checks. Plus a code read for bugs a scan
 (catalogue 88–91 with the demo pictures, which are PNGs about three times the size of real
 phone-made JPEG thumbnails); 0 accessibility violations, console errors or overflow in 76 page
 views; all 123 unit, 54 database and 158 browser checks pass.
+
+## 20. Second design round: "slick and professional"
+- **Phone-app layout.** A compact top bar (mark, shop name, uploads, a globe language button),
+  then a dark **rate ticker** styled like the souk's rate boards (gold figures on ink, a live
+  dot and the time set), then the page. Navigation moved to a **bottom tab bar** on phones, in
+  thumb reach, with a raised gold **Add** button in the middle, because adding pieces is the most
+  frequent job. The tab bar hides on the add and edit screens, which have their own Save bar.
+  Tablets and desktops keep pill links and a gold Add button in a sticky header. The phone
+  header went from about 190 px to about 90 px.
+- **Palette.** Warm ivory paper, white cards and near-black ink, with gold kept for prices and
+  highlights, as jewellery brands do. Primary buttons are ink (gold in dark mode) rather than
+  mustard. Every text and background pair was checked to be at least 4.5:1 in both themes, and
+  the accessibility scan finds no contrast issues.
+- **Piece page leads with the price** a salesperson quotes, in large serif, with the rate and
+  time underneath and the full breakdown one tap away. The photo runs edge to edge on phones.
+  It gets a **Share** button for sending just this piece, and status as a segmented control with
+  coloured dots.
+- **Consistent controls:** segmented pills for photo/360°, status and description languages;
+  ink chips for karat and category; a real switch for AI fill; numbered steps in the share
+  composer; initials avatars for clients and team members; small uppercase section labels
+  (letter-spacing only for English, since it breaks joined Arabic letters).
+- **Rates page:** current rates as a dark rate board matching the ticker.
+- **Client's link page** as a lookbook: a centred hero with the shop's name in large serif, a
+  pill language switch, and larger cards with serif names and prices.
+- **Measured against the previous design** (same data, runs alternating): Lighthouse
+  performance within noise (catalogue 89–90 vs 91, piece page 95 vs 96, client page 94–95 vs
+  93–96); accessibility and best practices 100; 0 issues in the 76-view survey; 159 browser
+  checks pass.

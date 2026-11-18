@@ -95,6 +95,15 @@ export function ClientForm({
   );
 }
 
+/** Step number beside each section title (decorative; the titles carry the meaning). */
+function Step({ n }: { n: number }) {
+  return (
+    <span aria-hidden="true" className="num inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs text-paper">
+      {n}
+    </span>
+  );
+}
+
 export function ShareComposer(props: { shopId: string; shopName: string; vat: boolean; items: ShareItem[]; clients: ClientRow[]; soldLeftOut: number }) {
   const { t, locale } = useT();
   const [items, setItems] = useState(props.items);
@@ -190,8 +199,11 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
       {props.soldLeftOut > 0 && <p className="rounded-xl border border-warn bg-warn-soft p-3 text-sm">{t("share.soldLeftOut", { count: props.soldLeftOut })}</p>}
 
       {/* 1. Pieces */}
-      <section aria-labelledby="sh-pieces" className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-        <h2 id="sh-pieces" className="mb-2 font-semibold">{t("share.pieces", { count: items.length })}</h2>
+      <section aria-labelledby="sh-pieces" className="rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70">
+        <h2 id="sh-pieces" className="mb-2 flex items-center gap-2.5 font-semibold">
+          <Step n={1} />
+          {t("share.pieces", { count: items.length })}
+        </h2>
         <ul className="divide-y divide-line">
           {items.map((i) => (
             <li key={i.id} className="flex items-center gap-3 py-2">
@@ -203,8 +215,9 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{i.name}</p>
-                <p className="text-sm text-muted">
-                  <span dir="ltr" className="num">{i.karat}K · {i.weight} · {i.price ?? "—"}</span>
+                <p className="flex flex-wrap gap-x-2 text-[13px] text-muted">
+                  <span dir="ltr" className="num whitespace-nowrap">{i.karat}K · {i.weight}</span>
+                  <span dir="ltr" className="num whitespace-nowrap text-gold">{i.price ?? "—"}</span>
                 </p>
                 {i.status === "reserved" && <p className="text-xs text-warn">{t("status.reserved")}</p>}
               </div>
@@ -222,8 +235,9 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
       </section>
 
       {/* 2. Client */}
-      <section aria-labelledby="sh-client" className="space-y-2 rounded-2xl border border-line bg-surface p-4 shadow-card">
-        <h2 id="sh-client" className="font-semibold">
+      <section aria-labelledby="sh-client" className="space-y-2 rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70">
+        <h2 id="sh-client" className="flex items-center gap-2.5 font-semibold">
+          <Step n={2} />
           <label htmlFor="sh-client-select">{t("share.client")}</label>
         </h2>
         <select
@@ -259,8 +273,9 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
       </section>
 
       {/* 3. Message */}
-      <section aria-labelledby="sh-msg" className="space-y-2 rounded-2xl border border-line bg-surface p-4 shadow-card">
-        <h2 id="sh-msg" className="font-semibold">
+      <section aria-labelledby="sh-msg" className="space-y-2 rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70">
+        <h2 id="sh-msg" className="flex items-center gap-2.5 font-semibold">
+          <Step n={3} />
           <label htmlFor="sh-message">{t("share.message")}</label>
         </h2>
         <textarea
@@ -292,8 +307,11 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
       </section>
 
       {/* 4. Outputs */}
-      <section aria-labelledby="sh-send" className="space-y-3 rounded-2xl border border-line bg-surface p-4 shadow-card">
-        <h2 id="sh-send" className="font-semibold">{t("share.send")}</h2>
+      <section aria-labelledby="sh-send" className="space-y-3 rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70">
+        <h2 id="sh-send" className="flex items-center gap-2.5 font-semibold">
+          <Step n={4} />
+          {t("share.send")}
+        </h2>
         {!created ? (
           <button type="button" className={btnPrimary + " w-full min-h-12"} disabled={creating} onClick={create}>
             <IconLink size={18} /> {creating ? t("share.creating") : t("share.createLink")}

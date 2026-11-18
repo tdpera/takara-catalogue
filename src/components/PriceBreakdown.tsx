@@ -4,6 +4,7 @@ import type { MessageKey } from "@/i18n";
 import { priceOf, toDec, type PieceInput, type PriceError, type RateMap } from "@/lib/pricing";
 import { isRateToday } from "@/lib/rates";
 import { formatAED, formatDubaiDateTime, formatGrams, formatRate } from "@/lib/format";
+import { IconChevron } from "./icons";
 
 const ERR: Record<PriceError, MessageKey> = {
   invalid_karat: "price.errKarat",
@@ -17,8 +18,22 @@ const Num = ({ children }: { children: React.ReactNode }) => (
   <span dir="ltr" className="num whitespace-nowrap">{children}</span>
 );
 
-/** Full price breakdown from the current rates. Lines in fils, final price in whole AED. */
-export function PriceBreakdown({ piece, rates, vatEnabled }: { piece: PieceInput; rates: RateMap; vatEnabled: boolean }) {
+/**
+ * Price from the current rates. Lines in fils, final price in whole AED.
+ * "table" shows the full breakdown (edit and rates screens); "headline" leads with the price a
+ * salesperson quotes, with the breakdown one tap away (piece page).
+ */
+export function PriceBreakdown({
+  piece,
+  rates,
+  vatEnabled,
+  variant = "table",
+}: {
+  piece: PieceInput;
+  rates: RateMap;
+  vatEnabled: boolean;
+  variant?: "table" | "headline";
+}) {
   const { t, locale } = useT();
   const res = priceOf(piece, rates, vatEnabled);
   if (!res.ok) {
@@ -43,28 +58,60 @@ export function PriceBreakdown({ piece, rates, vatEnabled }: { piece: PieceInput
     </tr>
   );
 
+  const lines = (
+    <>
+      {row(
+        t("price.netGold"),
+        hasStone ? <Num>{t("price.stonesNote", { gross: formatGrams(piece.gross_g), stone: formatGrams(piece.stone_g!) })}</Num> : null,
+        <Num>{formatGrams(p.netGoldG)}</Num>,
+      )}
+      {row(t("price.goldValue"), <Num>{formatGrams(p.netGoldG)} × {formatRate(p.rate)}</Num>, <Num>{formatAED(p.goldValue, 2)}</Num>)}
+      {row(
+        t("price.making"),
+        p.makingMode === "flat" ? t("price.flat") : <Num>{formatGrams(p.netGoldG)} × {formatRate(p.makingPerG)}</Num>,
+        <Num>{formatAED(p.making, 2)}</Num>,
+      )}
+      {p.extras.gt(0) && row(t("price.extrasRow"), null, <Num>{formatAED(p.extras, 2)}</Num>)}
+      {p.vatEnabled && row(t("price.subtotal"), null, <Num>{formatAED(p.base, 2)}</Num>)}
+      {p.vatEnabled && row(t("price.vat"), null, <Num>{formatAED(p.vat, 2)}</Num>)}
+      {row(t("price.total"), null, <Num>{formatAED(p.total, 2)}</Num>)}
+    </>
+  );
+  const note = (
+    <p className="mt-2 text-sm text-muted">
+      {t("price.rateNote", { karat: p.karat, rate: formatRate(p.rate), time: formatDubaiDateTime(p.rateSetAt, locale) })}
+      {stale && <strong className="ms-1 font-semibold text-warn">{t("price.notTodayRate")}</strong>}
+    </p>
+  );
+
+  if (variant === "headline") {
+    return (
+      <div aria-live="polite">
+        <p className="eyebrow">{t(p.vatEnabled ? "price.priceInclVat" : "price.price")}</p>
+        <p className="mt-1 font-display text-[2.75rem] leading-none text-gold">
+          <span dir="ltr">{formatAED(p.totalWhole)}</span>
+        </p>
+        {note}
+        <details className="group mt-4 border-t border-line pt-1">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 font-medium [&::-webkit-details-marker]:hidden">
+            {t("price.breakdown")}
+            <IconChevron size={18} className="text-muted transition-transform group-open:rotate-90" />
+          </summary>
+          <table className="w-full border-collapse">
+            <caption className="sr-only">{t("price.breakdown")}</caption>
+            <tbody className="divide-y divide-line">{lines}</tbody>
+          </table>
+        </details>
+      </div>
+    );
+  }
+
   return (
     <div>
       <table className="w-full border-collapse" aria-live="polite">
         <caption className="sr-only">{t("price.breakdown")}</caption>
         <tbody className="divide-y divide-line">
-          {row(
-            t("price.netGold"),
-            hasStone ? (
-              <Num>{t("price.stonesNote", { gross: formatGrams(piece.gross_g), stone: formatGrams(piece.stone_g!) })}</Num>
-            ) : null,
-            <Num>{formatGrams(p.netGoldG)}</Num>,
-          )}
-          {row(t("price.goldValue"), <Num>{formatGrams(p.netGoldG)} × {formatRate(p.rate)}</Num>, <Num>{formatAED(p.goldValue, 2)}</Num>)}
-          {row(
-            t("price.making"),
-            p.makingMode === "flat" ? t("price.flat") : <Num>{formatGrams(p.netGoldG)} × {formatRate(p.makingPerG)}</Num>,
-            <Num>{formatAED(p.making, 2)}</Num>,
-          )}
-          {p.extras.gt(0) && row(t("price.extrasRow"), null, <Num>{formatAED(p.extras, 2)}</Num>)}
-          {p.vatEnabled && row(t("price.subtotal"), null, <Num>{formatAED(p.base, 2)}</Num>)}
-          {p.vatEnabled && row(t("price.vat"), null, <Num>{formatAED(p.vat, 2)}</Num>)}
-          {row(t("price.total"), null, <Num>{formatAED(p.total, 2)}</Num>)}
+          {lines}
           {row(
             t(p.vatEnabled ? "price.priceInclVat" : "price.price"),
             null,
@@ -73,10 +120,7 @@ export function PriceBreakdown({ piece, rates, vatEnabled }: { piece: PieceInput
           )}
         </tbody>
       </table>
-      <p className="mt-2 text-sm text-muted">
-        {t("price.rateNote", { karat: p.karat, rate: formatRate(p.rate), time: formatDubaiDateTime(p.rateSetAt, locale) })}
-        {stale && <strong className="ms-1 font-semibold text-warn">{t("price.notTodayRate")}</strong>}
-      </p>
+      {note}
     </div>
   );
 }

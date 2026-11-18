@@ -132,13 +132,13 @@ export function EditForm(props: { initial: Initial; shopId: string; canDelete: b
         {num("extras_aed", "price.extras", "price.extrasHint")}
       </div>
 
-      <section aria-labelledby="e-price" className="rounded-2xl border border-line bg-surface p-3">
-        <h2 id="e-price" className="mb-2 font-semibold">{t("piece.price")}</h2>
+      <section aria-labelledby="e-price" className="rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70">
+        <h2 id="e-price" className="eyebrow mb-3">{t("piece.price")}</h2>
         <PriceBreakdown piece={v} rates={props.rates} vatEnabled={props.vatEnabled} />
       </section>
 
-      <section aria-labelledby="e-desc" className="space-y-3 rounded-2xl border border-line bg-surface p-3">
-        <h2 id="e-desc" className="font-semibold">
+      <section aria-labelledby="e-desc" className="space-y-3 rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70">
+        <h2 id="e-desc" className="eyebrow">
           {t("ai.descriptions")}
           <AiBadge show={aiLangs.size > 0} />
         </h2>
@@ -185,7 +185,7 @@ export function EditForm(props: { initial: Initial; shopId: string; canDelete: b
         </button>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgb(0_0_0/0.06)] backdrop-blur-md">
         <div className="mx-auto max-w-3xl space-y-2">
           {error && <p role="alert" className={errorText}>{t(error)}</p>}
           <div className="flex justify-end gap-3">

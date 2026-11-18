@@ -76,15 +76,15 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
     <I18nProvider locale={locale}>
       <ViewBeacon token={token} />
       <div lang={locale} dir={dir} className="min-h-dvh bg-paper">
-        <header className="border-b border-line bg-surface">
-          <div aria-hidden="true" className="h-1 bg-[linear-gradient(90deg,#7a5212,#e6c27a,#7a5212)]" />
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-4">
-            <div>
-              <p className="font-display text-[1.9rem] leading-tight">{share.shop}</p>
-              <h1 className="text-muted">{t("pub.title")}</h1>
-            </div>
-            <nav aria-label={t("pub.language")}>
-              <ul className="flex flex-wrap gap-1 text-sm">
+        <header className="relative overflow-hidden border-b border-line bg-surface">
+          <div aria-hidden="true" className="h-1 bg-gold-gradient" />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_at_top,var(--gold-soft),transparent_70%)]" />
+          <div className="relative mx-auto flex max-w-3xl flex-col items-center px-4 pt-10 pb-8 text-center">
+            <h1 className="eyebrow">{t("pub.title")}</h1>
+            <p className="mt-2 font-display text-[2.6rem] leading-[1.05] [overflow-wrap:anywhere]">{share.shop}</p>
+            <div aria-hidden="true" className="gold-rule mt-5 w-32" />
+            <nav aria-label={t("pub.language")} className="mt-5">
+              <ul className="flex flex-wrap justify-center gap-1 rounded-full border border-line bg-raised p-1 text-sm">
                 {LOCALES.map((l) => (
                   <li key={l}>
                     <a
@@ -92,7 +92,7 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
                       lang={l}
                       hrefLang={l}
                       aria-current={l === locale ? "true" : undefined}
-                      className={`inline-flex min-h-10 items-center rounded-full border px-3 ${l === locale ? "border-ink bg-ink text-paper" : "border-line"}`}
+                      className={`inline-flex min-h-9 items-center rounded-full px-3.5 transition-colors ${l === locale ? "bg-surface font-semibold text-ink shadow-sm" : "text-muted hover:text-ink"}`}
                     >
                       {LOCALE_NAMES[l]}
                     </a>
@@ -103,12 +103,12 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
           </div>
         </header>
 
-        <main id="main" className="mx-auto max-w-5xl space-y-4 px-4 py-6">
-          <p className="rounded-xl border border-line bg-surface p-3 text-sm">
+        <main id="main" className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+          <p className="mx-auto max-w-xl text-center text-sm text-muted">
             {priceNote(locale, share.vat_enabled)}
             {oldest && <> {t("pub.rateAt", { time: formatDubaiDateTime(oldest, locale) })}</>}
           </p>
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {share.pieces.map((p) => {
               const pr = priceOf(p, rates, share.vat_enabled);
               const photo = p.photo ? urls.get(p.photo.path) : undefined;
@@ -116,17 +116,17 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
               const spin = p.spin ? urls.get(p.spin.path) : undefined;
               const desc = p.descriptions?.[locale] ?? p.descriptions?.en;
               return (
-                <li key={p.id} className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+                <li key={p.id} className="overflow-hidden rounded-[1.6rem] bg-surface shadow-card ring-1 ring-line/70">
                   {spin && p.spin ? (
                     <PublicSpin name={p.name} src={spin} frames={p.spin.frames} cols={p.spin.cols} poster={poster} />
                   ) : photo ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photo} alt={t("piece.photoAlt", { name: p.name })} width={1600} height={1600} loading="lazy" className="aspect-square w-full bg-paper object-cover" />
+                    <img src={photo} alt={t("piece.photoAlt", { name: p.name })} width={1600} height={1600} loading="lazy" className="aspect-square w-full bg-raised object-cover" />
                   ) : (
-                    <div className="aspect-square bg-paper" />
+                    <div className="aspect-square bg-raised" />
                   )}
-                  <div className="space-y-1 p-4">
-                    <h2 className="text-lg font-semibold [overflow-wrap:anywhere]">{p.name}</h2>
+                  <div className="space-y-1.5 p-5">
+                    <h2 className="font-display text-[1.45rem] leading-tight [overflow-wrap:anywhere]">{p.name}</h2>
                     <p className="text-sm text-muted">
                       <span dir="ltr" className="num">{p.karat}K · {formatGrams(p.gross_g)}</span> · {t(`categories.${p.category}` as MessageKey)}
                     </p>
@@ -135,11 +135,11 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
                     ) : (
                       <p className="flex flex-wrap items-baseline gap-2 pt-1">
                         <span dir="ltr" className={pr.ok ? "font-display text-[1.6rem] leading-tight text-gold" : "font-semibold text-muted"}>{pr.ok ? formatAED(pr.price.totalWhole) : t("pub.priceInStore")}</span>
-                        {p.status === "reserved" && <span className="rounded-full border border-warn bg-warn-soft px-2 text-xs font-semibold text-warn">{t("status.reserved")}</span>}
+                        {p.status === "reserved" && <span className="rounded-full bg-warn-soft px-2.5 py-0.5 text-xs font-semibold text-warn">{t("status.reserved")}</span>}
                       </p>
                     )}
                     {desc && (
-                      <p lang={p.descriptions?.[locale] ? locale : "en"} dir={p.descriptions?.[locale] ? dir : "ltr"} className="pt-2 text-sm text-start">
+                      <p lang={p.descriptions?.[locale] ? locale : "en"} dir={p.descriptions?.[locale] ? dir : "ltr"} className="border-t border-line pt-3 text-[15px] leading-relaxed text-start text-muted">
                         {desc}
                       </p>
                     )}
@@ -148,7 +148,7 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
               );
             })}
           </ul>
-          <p className="pt-2 text-center text-sm text-muted">{t("pub.validUntil", { date: formatDubaiDateTime(share.expires_at, locale) })}</p>
+          <p className="pt-4 text-center text-sm text-muted">{t("pub.validUntil", { date: formatDubaiDateTime(share.expires_at, locale) })}</p>
           <p className="flex items-center justify-center gap-1.5 pt-4 pb-2 text-xs text-muted">
             <Logo size={16} /> Souq Catalogue
           </p>

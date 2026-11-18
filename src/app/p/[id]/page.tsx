@@ -12,8 +12,8 @@ import { PriceBreakdown } from "@/components/PriceBreakdown";
 import { PieceMedia } from "@/components/piece/PieceMedia";
 import { DescriptionTabs } from "@/components/piece/DescriptionTabs";
 import { StatusControl } from "@/components/piece/StatusControl";
-import { btn, btnLink, card } from "@/components/ui";
-import { IconBack } from "@/components/icons";
+import { btn, btnLink, btnPrimary, card } from "@/components/ui";
+import { IconBack, IconShare } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Piece" };
 
@@ -31,48 +31,60 @@ export default async function PiecePage({ params }: { params: Promise<{ id: stri
   return (
     <>
       <AppHeader memberships={memberships} current={current} />
-      <main id="main" className="mx-auto max-w-5xl px-4 pt-3 pb-16">
-        <Link href="/" className={btnLink}>
+      <main id="main" className="mx-auto max-w-5xl px-4 pt-2 pb-16">
+        <Link href="/" className={btnLink + " text-sm"}>
           <IconBack size={18} /> {t("piece.back")}
         </Link>
-        <div className="mt-2 grid gap-6 md:grid-cols-2 md:items-start">
-          <PieceMedia name={piece.name} photo={piece.photo} spin={piece.spin} />
+        <div className="mt-1 grid gap-6 md:grid-cols-[1.1fr_1fr] md:items-start md:gap-10">
+          <div className="md:sticky md:top-32">
+            <PieceMedia name={piece.name} photo={piece.photo} spin={piece.spin} />
+          </div>
 
           <div className="space-y-5">
-            <div className="space-y-2">
-              <h1 className="font-display text-[2rem] leading-tight [overflow-wrap:anywhere]">{piece.name}</h1>
-              <ul className="flex flex-wrap gap-2 text-sm">
-                <li dir="ltr" className="num rounded-full border border-line bg-surface px-3 py-0.5">{piece.karat}K</li>
-                <li dir="ltr" className="num rounded-full border border-line bg-surface px-3 py-0.5">{formatGrams(piece.gross_g)}</li>
-                <li className="rounded-full border border-line bg-surface px-3 py-0.5">{t(`categories.${piece.category}` as MessageKey)}</li>
-                <li className="rounded-full border border-line bg-surface px-3 py-0.5">
-                  {t("piece.sku")} <span dir="ltr" className="num">{piece.sku}</span>
-                </li>
-              </ul>
-              <p className="text-sm text-muted">
-                {t("piece.added")} <span>{formatDubaiDateTime(piece.created_at, locale)}</span>
+            <div>
+              <p className="eyebrow">
+                {t(`categories.${piece.category}` as MessageKey)} · <span dir="ltr">{piece.sku}</span>
               </p>
+              <h1 className="mt-1 font-display text-[2.25rem] leading-[1.1] [overflow-wrap:anywhere]">{piece.name}</h1>
+              <ul className="mt-3 flex flex-wrap gap-2 text-sm">
+                <li dir="ltr" className="num rounded-full bg-gold-soft px-3 py-1 text-ink">{piece.karat}K</li>
+                <li dir="ltr" className="num rounded-full border border-line bg-surface px-3 py-1">{formatGrams(piece.gross_g)}</li>
+                {piece.status !== "in_stock" && (
+                  <li className="rounded-full border border-warn/40 bg-warn-soft px-3 py-1 font-medium text-warn">{t(`status.${piece.status}`)}</li>
+                )}
+              </ul>
             </div>
 
             <section aria-labelledby="price-h" className={card}>
-              <h2 id="price-h" className="mb-2 font-semibold">{t("piece.price")}</h2>
-              <PriceBreakdown piece={piece} rates={rates} vatEnabled={vatEnabled} />
+              <h2 id="price-h" className="sr-only">{t("piece.price")}</h2>
+              <PriceBreakdown piece={piece} rates={rates} vatEnabled={vatEnabled} variant="headline" />
             </section>
+
+            <div className="flex gap-2">
+              {piece.status !== "sold" && (
+                <Link href={`/share?ids=${piece.id}`} className={btnPrimary + " flex-1"}>
+                  <IconShare size={18} /> {t("catalogue.share")}
+                </Link>
+              )}
+              {canEdit && (
+                <Link href={`/p/${piece.id}/edit`} className={btn + " flex-1"}>
+                  {t("piece.edit")}
+                </Link>
+              )}
+            </div>
 
             <section className={card}>
               <StatusControl pieceId={piece.id} status={piece.status} />
             </section>
 
             <section aria-labelledby="desc-h" className={card}>
-              <h2 id="desc-h" className="mb-2 font-semibold">{t("piece.description")}</h2>
+              <h2 id="desc-h" className="eyebrow mb-3">{t("piece.description")}</h2>
               <DescriptionTabs descriptions={piece.descriptions ?? {}} />
             </section>
 
-            {canEdit && (
-              <Link href={`/p/${piece.id}/edit`} className={btn + " w-full"}>
-                {t("piece.edit")}
-              </Link>
-            )}
+            <p className="text-center text-sm text-muted">
+              {t("piece.added")} <span>{formatDubaiDateTime(piece.created_at, locale)}</span>
+            </p>
           </div>
         </div>
       </main>

@@ -13,7 +13,7 @@ export async function AuthShell({ children }: { children: React.ReactNode }) {
       />
       <main id="main" className="relative mx-auto flex min-h-dvh max-w-md flex-col px-4 pt-4 pb-10">
         <div className="flex justify-end">
-          <LanguagePicker />
+          <LanguagePicker compact />
         </div>
         <div className="mt-8 mb-8 flex flex-col items-center text-center">
           <Logo size={60} />

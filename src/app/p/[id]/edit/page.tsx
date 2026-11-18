@@ -32,7 +32,7 @@ export default async function EditPiecePage({ params }: { params: Promise<{ id: 
         <Link href={`/p/${piece.id}`} className={btnLink}>
           <IconBack size={18} /> {piece.name}
         </Link>
-        <h1 className="mt-2 mb-4 font-display text-[1.75rem] leading-tight">
+        <h1 className="mt-2 mb-4 font-display text-[2rem] leading-tight">
           {t("edit.title", { sku: piece.sku })}
         </h1>
         {canEdit ? (

@@ -17,7 +17,7 @@ export default async function AddPage() {
     <>
       <AppHeader memberships={memberships} current={current} />
       <main id="main" className="mx-auto max-w-3xl px-4 py-4">
-        <h1 className="mb-4 font-display text-[1.75rem] leading-tight">{t("add.title")}</h1>
+        <h1 className="mb-4 font-display text-[2rem] leading-tight">{t("add.title")}</h1>
         <CaptureForm
           shopId={current.shop_id}
           userId={user.id}

@@ -36,7 +36,7 @@ export function Chips<T extends string | number>({
         {options.map((o) => (
           <label key={String(o)} className="relative">
             <input type="radio" name={name} className="peer sr-only" checked={value === o} onChange={() => onChange(o)} />
-            <span className={`inline-flex min-h-11 min-w-14 cursor-pointer items-center justify-center rounded-xl border border-line bg-surface px-3 font-medium peer-checked:font-semibold ${ai ? "peer-checked:border-2 peer-checked:border-warn peer-checked:bg-warn-soft" : "peer-checked:border-gold peer-checked:bg-gold-soft"} peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]`}>
+            <span className={`inline-flex min-h-11 min-w-14 cursor-pointer items-center justify-center rounded-full border border-line bg-surface px-4 font-medium transition-colors hover:border-ink/25 peer-checked:font-semibold ${ai ? "peer-checked:border-2 peer-checked:border-warn peer-checked:bg-warn-soft" : "peer-checked:border-ink peer-checked:bg-ink peer-checked:text-paper"} peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]`}>
               {render(o)}
             </span>
           </label>

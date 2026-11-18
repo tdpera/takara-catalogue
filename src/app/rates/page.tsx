@@ -57,10 +57,10 @@ export default async function RatesPage() {
     <>
       <AppHeader memberships={memberships} current={current} onRatesPage />
       <main id="main" className="mx-auto max-w-3xl space-y-6 px-4 py-6">
-        <h1 className="font-display text-[1.75rem] leading-tight">{t("rates.title")}</h1>
+        <h1 className="font-display text-[2rem] leading-tight">{t("rates.title")}</h1>
 
-        <section className={card} aria-labelledby="current-h">
-          <h2 id="current-h" className="text-lg font-semibold">{t("rates.current")}</h2>
+        <section className="rounded-3xl bg-ticker p-5 text-ticker-muted shadow-lift" aria-labelledby="current-h">
+          <h2 id="current-h" className="eyebrow text-ticker-muted!">{t("rates.current")}</h2>
           {anyRate ? (
             <table className="mt-2 w-full">
               <thead className="sr-only">
@@ -70,17 +70,18 @@ export default async function RatesPage() {
                   <th scope="col">{t("rates.setAt", { time: "" })}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody className="divide-y divide-white/10">
                 {KARATS.map((k) => {
                   const r = rates[k];
                   const today = r && isRateToday(r.set_at);
                   return (
                     <tr key={k}>
-                      <th scope="row" className="py-3 pe-3 text-start text-lg font-semibold">{k}K</th>
+                      <th scope="row" className="py-3 pe-3 text-start text-lg font-semibold text-[#f2eee7]">{k}K</th>
                       <td className="py-3 pe-3">
-                        <span dir="ltr" className="num text-lg">{r ? "AED " + formatRate(r.aed_per_g) : "—"}</span>
+                        <span dir="ltr" className="num text-[1.6rem] leading-none text-ticker-gold">{r ? formatRate(r.aed_per_g) : "—"}</span>
+                        {r && <span className="ms-1.5 text-xs">AED/g</span>}
                       </td>
-                      <td className={"py-3 text-end text-sm " + (r && !today ? "font-medium text-warn" : "text-muted")}>
+                      <td className={"py-3 text-end text-xs " + (r && !today ? "font-medium text-[#f0b04a]" : "")}>
                         {r && t("rates.setAt", { time: formatDubaiDateTime(r.set_at, locale) })}
                       </td>
                     </tr>
@@ -89,18 +90,18 @@ export default async function RatesPage() {
               </tbody>
             </table>
           ) : (
-            <p className="mt-2 text-muted">{t("rates.noneYet")}</p>
+            <p className="mt-2">{t("rates.noneYet")}</p>
           )}
         </section>
 
         {isAdmin ? (
           <>
             <section id="today" className={card + " scroll-mt-4"} aria-labelledby="today-h">
-              <h2 id="today-h" className="mb-2 text-lg font-semibold">{t("rates.todayTitle")}</h2>
+              <h2 id="today-h" className="mb-2 font-display text-[1.35rem] leading-tight">{t("rates.todayTitle")}</h2>
               <RatesForm initial={initial} current={rates} />
             </section>
             <section className={card} aria-labelledby="settings-h">
-              <h2 id="settings-h" className="mb-2 text-lg font-semibold">{t("rates.settingsTitle")}</h2>
+              <h2 id="settings-h" className="mb-2 font-display text-[1.35rem] leading-tight">{t("rates.settingsTitle")}</h2>
               <SettingsForm making={inputValue(defaultMakingPerG)} vat={vatEnabled} />
             </section>
           </>
@@ -109,12 +110,12 @@ export default async function RatesPage() {
         )}
 
         <section className={card} aria-labelledby="calc-h">
-          <h2 id="calc-h" className="mb-2 text-lg font-semibold">{t("price.calculator")}</h2>
+          <h2 id="calc-h" className="mb-2 font-display text-[1.35rem] leading-tight">{t("price.calculator")}</h2>
           <PriceCalculator rates={rates} vatEnabled={vatEnabled} defaultMaking={inputValue(defaultMakingPerG)} />
         </section>
 
         <section className={card} aria-labelledby="history-h">
-          <h2 id="history-h" className="text-lg font-semibold">{t("rates.history")}</h2>
+          <h2 id="history-h" className="font-display text-[1.35rem] leading-tight">{t("rates.history")}</h2>
           {shown.length === 0 ? (
             <p className="mt-2 text-muted">{t("rates.historyEmpty")}</p>
           ) : (

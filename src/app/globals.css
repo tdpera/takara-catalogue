@@ -1,39 +1,54 @@
 @import "tailwindcss";
 
-/* Colour tokens follow the prototype. Light by default; dark follows the phone's setting. */
+/* Colour tokens. Warm ivory, near-black and gold, like a jeweller's window: gold is kept for
+   prices and highlights, primary actions are ink. Light by default; dark follows the phone.
+   Every text/background pair is at least 4.5:1 (checked for both themes). */
 :root {
-  --paper: #f2f3f5;
+  --paper: #f6f4ef;
   --surface: #ffffff;
-  --ink: #15171c;
-  --muted: #5d636e;
-  --line: #dcdfe5;
-  --gold: #8f6312;
-  --gold-soft: #f3e7cb;
-  --live: #1d7650;
-  --warn: #9a5b00;
+  --raised: #fbfaf7;
+  --ink: #1c1a17;
+  --muted: #67615a;
+  --line: #e5e0d5;
+  --gold: #8a6013;
+  --gold-soft: #f3e9d2;
+  --live: #1b6f4b;
+  --warn: #94570a;
   --warn-soft: #fbecd2;
   --danger: #a3302a;
   --focus: #1a5fd0;
-  --shadow: 0 1px 2px rgb(20 22 28 / 0.06), 0 6px 20px rgb(20 22 28 / 0.06);
-  --shadow-lift: 0 2px 4px rgb(20 22 28 / 0.08), 0 12px 28px rgb(20 22 28 / 0.1);
+  --primary: #1c1a17;
+  --on-primary: #f6f4ef;
+  --ticker: #1c1a17;
+  --ticker-muted: #b9b1a3;
+  --ticker-gold: #e2bd6e;
+  --gold-gradient: linear-gradient(135deg, #f3d58c 0%, #c8922f 48%, #8a5e14 100%);
+  --shadow: 0 1px 2px rgb(28 26 23 / 0.05), 0 8px 24px rgb(28 26 23 / 0.06);
+  --shadow-lift: 0 2px 6px rgb(28 26 23 / 0.07), 0 16px 36px rgb(28 26 23 / 0.1);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #0f1115;
-    --surface: #181b21;
-    --ink: #eceef1;
-    --muted: #9aa1ac;
-    --line: #2b2f37;
-    --gold: #dcb05a;
-    --gold-soft: #3a2f1c;
+    --paper: #0f0e0c;
+    --surface: #1a1815;
+    --raised: #211e1a;
+    --ink: #f2eee7;
+    --muted: #a69f93;
+    --line: #2f2b25;
+    --gold: #dcb466;
+    --gold-soft: #3a3020;
     --live: #4cc38a;
     --warn: #f0b04a;
     --warn-soft: #3a2c14;
     --danger: #ef7d74;
     --focus: #7fb0ff;
+    --primary: #dcb466;
+    --on-primary: #1a1408;
+    --ticker: #1a1815;
+    --ticker-muted: #a69f93;
+    --ticker-gold: #e2bd6e;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.35);
-    --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.45), 0 14px 32px rgb(0 0 0 / 0.45);
+    --shadow-lift: 0 2px 6px rgb(0 0 0 / 0.45), 0 16px 36px rgb(0 0 0 / 0.45);
     color-scheme: dark;
   }
 }
@@ -50,6 +65,12 @@
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-danger: var(--danger);
+  --color-raised: var(--raised);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-ticker: var(--ticker);
+  --color-ticker-muted: var(--ticker-muted);
+  --color-ticker-gold: var(--ticker-gold);
   --shadow-card: var(--shadow);
   --shadow-lift: var(--shadow-lift);
   /* Interface text uses the phone's own fonts: cheap Android phones already ship Noto for
@@ -85,6 +106,20 @@ body {
 
 /* Gold accent line used under the header and on hero areas. */
 .gold-rule { background: linear-gradient(90deg, transparent, var(--gold), transparent); height: 1px; }
+.bg-gold-gradient { background-image: var(--gold-gradient); }
+
+/* Small section labels. Letter-spacing only for Latin: it breaks joined Arabic letters and
+   doesn't suit Devanagari or Malayalam. */
+.eyebrow { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+:lang(ar) .eyebrow, :lang(hi) .eyebrow, :lang(ml) .eyebrow { letter-spacing: 0; text-transform: none; font-size: 0.8rem; }
+
+/* Edge fade on horizontally scrolling rows (the rate ticker). */
+.fade-x { mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%); }
+
+/* Leave room for the phone's bottom tab bar. */
+@media (max-width: 767px) {
+  body:has(.bottom-nav) { padding-bottom: calc(4.25rem + env(safe-area-inset-bottom)); }
+}
 
 /* Skeletons while a page loads on a slow connection. */
 @keyframes shimmer { 0% { opacity: 0.55; } 50% { opacity: 1; } 100% { opacity: 0.55; } }

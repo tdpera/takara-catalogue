@@ -8,6 +8,7 @@ import { ClientForm } from "@/app/share/ShareComposer";
 import { deleteClient } from "@/app/share/actions";
 import { IconPlus } from "@/components/icons";
 import { EmptyState } from "@/components/EmptyState";
+import { Avatar } from "@/components/Avatar";
 
 export function ClientsManager({ shopId, initial }: { shopId: string; initial: (ClientRow & { phoneDisplay?: string | null })[] }) {
   const { t } = useT();
@@ -34,10 +35,11 @@ export function ClientsManager({ shopId, initial }: { shopId: string; initial: (
               <ClientForm shopId={shopId} initial={c} onSaved={upsert} onCancel={() => setEditing(null)} />
             </li>
           ) : (
-            <li key={c.id} className="space-y-1 rounded-2xl border border-line bg-surface p-4 shadow-card">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="font-semibold">{c.name}</p>
-                <p className="text-sm text-muted">{LOCALE_NAMES[c.language]}</p>
+            <li key={c.id} className="space-y-2 rounded-3xl bg-surface p-4 shadow-card ring-1 ring-line/70">
+              <div className="flex items-center gap-3">
+                <Avatar name={c.name} size={44} />
+                <p className="me-auto min-w-0 truncate font-semibold">{c.name}</p>
+                <p className="rounded-full bg-raised px-2.5 py-0.5 text-sm text-muted">{LOCALE_NAMES[c.language]}</p>
               </div>
               {c.phone && (
                 <p className="text-sm">

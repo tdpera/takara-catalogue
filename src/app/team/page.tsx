@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { card } from "@/components/ui";
 import { SignOutButton } from "@/components/SignOutButton";
 import { InviteForm, MemberActions, NameForm, PendingInvite } from "./TeamForms";
+import { Avatar } from "@/components/Avatar";
 
 export const metadata: Metadata = { title: "Team" };
 
@@ -46,14 +47,14 @@ export default async function TeamPage() {
     <>
       <AppHeader memberships={memberships} current={current} />
       <main id="main" className="mx-auto max-w-3xl space-y-6 px-4 py-6">
-        <h1 className="font-display text-[1.75rem] leading-tight">{t("team.title")}</h1>
+        <h1 className="font-display text-[2rem] leading-tight">{t("team.title")}</h1>
 
         <section className={card}>
           <NameForm initial={me?.display_name ?? ""} />
         </section>
 
         <section className={card} aria-labelledby="members-h">
-          <h2 id="members-h" className="text-lg font-semibold">{t("team.members")}</h2>
+          <h2 id="members-h" className="eyebrow">{t("team.members")}</h2>
           <ul className="mt-2 divide-y divide-line">
             {sorted.map((m) => {
               const p = byId.get(m.user_id);
@@ -61,7 +62,8 @@ export default async function TeamPage() {
               const self = m.user_id === user.id;
               const canRemove = self || isOwner || (isAdmin && m.role === "salesperson");
               return (
-                <li key={m.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
+                <li key={m.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3.5">
+                  <Avatar name={p?.display_name} />
                   <div className="me-auto min-w-0">
                     <p className="font-medium">
                       {name} {self && <span className="text-muted">({t("team.you")})</span>}
@@ -89,7 +91,7 @@ export default async function TeamPage() {
 
         {isAdmin && (
           <section className={card} aria-labelledby="invite-h">
-            <h2 id="invite-h" className="text-lg font-semibold">{t("team.invite")}</h2>
+            <h2 id="invite-h" className="font-display text-xl">{t("team.invite")}</h2>
             <InviteForm roles={invitableRoles} />
             {(invites ?? []).length > 0 && (
               <>

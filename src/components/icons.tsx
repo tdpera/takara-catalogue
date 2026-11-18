@@ -106,6 +106,47 @@ export const IconSearch = (p: P) => (
   </Svg>
 );
 
+export const IconGrid = (p: P) => (
+  <Svg {...p}>
+    <rect x="4" y="4" width="7" height="7" rx="2" />
+    <rect x="13" y="4" width="7" height="7" rx="2" />
+    <rect x="4" y="13" width="7" height="7" rx="2" />
+    <rect x="13" y="13" width="7" height="7" rx="2" />
+  </Svg>
+);
+export const IconSend = (p: P) => (
+  <Svg {...p} className={`rtl:-scale-x-100 ${p.className ?? ""}`}>
+    <path d="M20.5 3.5 10 14" />
+    <path d="m20.5 3.5-6.5 17-4-6.5-6.5-4z" />
+  </Svg>
+);
+export const IconCoins = (p: P) => (
+  <Svg {...p}>
+    <ellipse cx="9" cy="7" rx="5" ry="2.5" />
+    <path d="M4 7v4c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V7" />
+    <path d="M10 15.4c.6.4 2.1 1.1 4 1.1 2.8 0 5-1.1 5-2.5V10c0-1.4-2.2-2.5-5-2.5" />
+    <path d="M10 19.4c.6.4 2.1 1.1 4 1.1 2.8 0 5-1.1 5-2.5v-4" />
+  </Svg>
+);
+export const IconUsers = (p: P) => (
+  <Svg {...p}>
+    <circle cx="9" cy="8.5" r="3.5" />
+    <path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5" />
+    <path d="M15.5 5.2a3.5 3.5 0 0 1 0 6.6M17.5 14.8c2 .6 3.2 2.2 3.5 4.7" />
+  </Svg>
+);
+export const IconGlobe = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M3.5 12h17M12 3.5c2.4 2.4 3.6 5.2 3.6 8.5s-1.2 6.1-3.6 8.5c-2.4-2.4-3.6-5.2-3.6-8.5S9.6 5.9 12 3.5z" />
+  </Svg>
+);
+export const IconChevron = (p: P) => (
+  <Svg {...p} className={`rtl:-scale-x-100 ${p.className ?? ""}`}>
+    <path d="m9 6 6 6-6 6" />
+  </Svg>
+);
+
 /** The app's mark: a gold ring with a stone, drawn as a gradient so it reads well at small sizes. */
 export function Logo({ size = 32, className = "" }: { size?: number; className?: string }) {
   return (

@@ -40,13 +40,13 @@ function useSelection(shopId: string) {
 
 function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; selected: boolean; onToggle: () => void }) {
   const { t } = useT();
-  const statusCls = c.status === "sold" ? "bg-ink text-paper" : "bg-warn-soft text-warn border border-warn";
+  const statusCls = c.status === "sold" ? "bg-ink/85 text-paper backdrop-blur-sm" : "bg-warn-soft/95 text-warn backdrop-blur-sm";
   return (
     <li
-      className={`group relative overflow-hidden rounded-2xl border bg-surface shadow-card transition duration-200 hover:shadow-lift motion-safe:hover:-translate-y-0.5 ${selected ? "border-gold ring-2 ring-gold" : "border-line"}`}
+      className={`group relative overflow-hidden rounded-[1.35rem] bg-surface shadow-card ring-1 transition duration-200 hover:shadow-lift motion-safe:hover:-translate-y-0.5 ${selected ? "ring-2 ring-gold" : "ring-line/70"}`}
     >
       <Link href={`/p/${c.id}`} className="block focus-visible:outline-3 focus-visible:outline-offset-[-3px] focus-visible:outline-[var(--focus)]">
-        <div className="relative aspect-square bg-paper">
+        <div className="relative aspect-square bg-raised">
           {c.photo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -75,14 +75,14 @@ function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; s
             </span>
           )}
         </div>
-        <div className="space-y-0.5 px-3 pt-2.5 pb-3">
+        <div className="space-y-0.5 px-3.5 pt-3 pb-3.5">
           <h2 className="line-clamp-2 text-[15px] leading-snug font-semibold [overflow-wrap:anywhere]">{c.name}</h2>
           <p className="text-xs text-muted">
             <span dir="ltr" className="num">{c.karat}K · {formatGrams(c.gross_g)}</span>
             <span className="sr-only"> · {c.sku}</span>
           </p>
           {c.price ? (
-            <p className="pt-1 font-display text-[1.35rem] leading-tight text-gold">
+            <p className="pt-1.5 font-display text-[1.4rem] leading-tight text-gold">
               <span dir="ltr">{c.price}</span>
             </p>
           ) : (
@@ -116,13 +116,13 @@ export function Grid({ shopId, cards }: { shopId: string; cards: Card[] }) {
   const [note, setNote] = useState<MessageKey | null>(null);
   return (
     <>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] sm:gap-4">
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] sm:gap-5">
         {cards.map((c, i) => (
           <PieceCard key={c.id} c={c} index={i} selected={sel.has(c.id)} onToggle={() => sel.toggle(c.id)} />
         ))}
       </ul>
       {sel.ids.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgb(0_0_0/0.08)] backdrop-blur">
+        <div className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 rounded-3xl border border-line bg-surface/95 px-4 py-3 shadow-lift backdrop-blur-md md:inset-x-0 md:bottom-0 md:rounded-none md:border-x-0 md:border-b-0 md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
             <p className="me-auto font-medium" aria-live="polite">{t("catalogue.selected", { count: sel.ids.length })}</p>
             <button type="button" className={btn} onClick={() => { sel.clear(); setNote(null); }}>

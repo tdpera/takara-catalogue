@@ -21,7 +21,7 @@ function Chip({ href, on, children }: { href: string; on: boolean; children: Rea
       scroll={false}
       prefetch={false}
       aria-current={on ? "true" : undefined}
-      className={`inline-flex min-h-10 shrink-0 items-center rounded-full border px-3.5 text-sm whitespace-nowrap transition-colors ${on ? "border-ink bg-ink font-semibold text-paper" : "border-line bg-surface hover:border-muted/60"}`}
+      className={`inline-flex min-h-10 shrink-0 items-center rounded-full border px-4 text-sm whitespace-nowrap transition-colors ${on ? "border-ink bg-ink font-semibold text-paper" : "border-line/80 bg-surface text-ink hover:border-ink/25"}`}
     >
       {children}
     </Link>
@@ -87,11 +87,11 @@ export function Filters({ f }: { f: F }) {
           autoComplete="off"
           maxLength={60}
           placeholder={t("catalogue.search")}
-          className={input + " ps-10 pe-24"}
+          className={input + " rounded-full border-transparent bg-surface ps-11 pe-24 shadow-card focus:border-ink/30"}
           value={q}
           onChange={(e) => search(e.target.value)}
         />
-        <IconSearch size={18} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted" />
+        <IconSearch size={18} className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-muted" />
         {f.category && <input type="hidden" name="category" value={f.category} />}
         {f.karat && <input type="hidden" name="karat" value={f.karat} />}
         {f.status && <input type="hidden" name="status" value={f.status} />}
@@ -116,7 +116,7 @@ export function Filters({ f }: { f: F }) {
           </Chip>
         ))}
         </div>
-        <span aria-hidden="true" className="mx-1 w-px shrink-0 self-stretch bg-line" />
+        <span aria-hidden="true" className="mx-1.5 my-2 w-px shrink-0 self-stretch bg-line" />
         <div role="group" aria-label={t("catalogue.filterStatus")} className="flex shrink-0 gap-2">
         <Chip href={filterHref(f, { status: null })} on={!f.status}>{t("catalogue.allStatuses")}</Chip>
         {STATUSES.map((s) => (

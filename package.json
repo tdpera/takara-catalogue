@@ -13,7 +13,9 @@
     "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,mailpit,realtime,postgres-meta,supavisor",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "db:lint": "supabase db lint --level warning"
+    "db:lint": "supabase db lint --level warning",
+    "seed": "node scripts/seed.mjs",
+    "e2e": "node e2e/run.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.10.0",
@@ -35,6 +37,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.29",
+    "playwright": "1.63.0",
     "supabase": "^3.2.0",
     "tailwindcss": "^4",
     "typescript": "^5",

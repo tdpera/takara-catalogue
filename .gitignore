@@ -43,3 +43,6 @@ next-env.d.ts
 
 # test screenshots shared during review
 /walkthrough/
+
+# end-to-end test output
+/e2e/.tmp/

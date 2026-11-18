@@ -4,6 +4,7 @@ import { I18nProvider } from "@/i18n/client";
 import { dirFor } from "@/i18n";
 import { getLocale } from "@/i18n/server";
 import { ServiceWorker } from "@/components/ServiceWorker";
+import { SPLASH_SCRIPT, Splash } from "@/components/Splash";
 import { makeT } from "@/i18n";
 import { display, mono } from "./fonts";
 
@@ -26,14 +27,20 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
+  const t = makeT(locale);
   return (
-    <html lang={locale} dir={dirFor(locale)} className={`${display.variable} ${mono.variable}`}>
+    // suppressHydrationWarning: the splash script may add data-splash to <html> before React loads.
+    <html lang={locale} dir={dirFor(locale)} className={`${display.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SPLASH_SCRIPT }} />
+      </head>
       <body className="min-h-dvh antialiased">
+        <Splash name={t("app.name")} tagline={t("app.tagline")} />
         <a
           href="#main"
           className="sr-only z-50 rounded-xl bg-ink px-4 py-3 font-semibold text-paper focus:not-sr-only focus:fixed focus:start-3 focus:top-3"
         >
-          {makeT(locale)("common.skip")}
+          {t("common.skip")}
         </a>
         <I18nProvider locale={locale}>{children}</I18nProvider>
         <ServiceWorker />

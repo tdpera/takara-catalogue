@@ -421,3 +421,20 @@ views; all 123 unit, 54 database and 158 browser checks pass.
   performance within noise (catalogue 89–90 vs 91, piece page 95 vs 96, client page 94–95 vs
   93–96); accessibility and best practices 100; 0 issues in the 76-view survey; 159 browser
   checks pass.
+
+## 21. Launch animation
+- On the first page of an app session, a dark screen where the gold ring **draws itself**, the
+  stone **pops on** with a ripple, the name rises in (its letter-spacing settles; Arabic, Hindi and
+  Malayalam rise without spacing, which would break their letters), a gold line and the tagline
+  follow, and it fades into the app. About 1.8 s, in the app's language.
+- **CSS only** (no JavaScript bundle), so it appears on the very first paint. A tiny script in
+  the page head decides, before anything is drawn, whether this is the first page of the
+  session; later pages and reloads never flash it.
+- **It never blocks:** the app renders underneath and taps go straight through, so a salesperson
+  can start typing at once.
+- **Skipped** for reduced-motion users (the phone setting), on clients' share links (that page
+  belongs to the shop), and if the browser blocks storage.
+- The installed app's own launch screen is the same dark colour, so opening from the home screen
+  flows into the animation.
+- **Measured:** no Lighthouse change (sign-in 97, catalogue 89–90); first paint 0.8 s; no
+  accessibility violations while it plays; 159 browser checks pass.

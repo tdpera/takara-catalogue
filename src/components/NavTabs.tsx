@@ -29,7 +29,7 @@ export function NavTabs() {
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
                 className={
-                  "flex min-h-12 items-center justify-center border-b-[3px] px-2 text-center font-medium " +
+                  "flex min-h-12 items-center justify-center border-b-[3px] px-1 text-center text-sm leading-tight font-medium sm:px-2 sm:text-base " +
                   (active ? "border-gold text-ink" : "border-transparent text-muted")
                 }
               >

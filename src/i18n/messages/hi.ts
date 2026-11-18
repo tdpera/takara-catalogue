@@ -266,7 +266,7 @@ const hi: Messages = {
     title: "पीस शेयर करें",
     none: "पहले कैटलॉग में पीस चुनें, फिर शेयर दबाएँ।",
     toCatalogue: "कैटलॉग पर जाएँ",
-    soldLeftOut: "{count} बिके हुए पीस हटा दिए गए।",
+    soldLeftOut: "बिके हुए पीस हटाए गए: {count}।",
     tooMany: "एक शेयर में ज़्यादा से ज़्यादा 24 पीस हो सकते हैं। पहले कुछ हटाएँ।",
     pieces: "पीस ({count})",
     remove: "{name} हटाएँ",

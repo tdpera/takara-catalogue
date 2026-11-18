@@ -264,7 +264,7 @@ const en = {
     title: "Share pieces",
     none: "Pick pieces in the catalogue first, then tap Share.",
     toCatalogue: "Go to the catalogue",
-    soldLeftOut: "{count} sold pieces were left out.",
+    soldLeftOut: "Sold pieces left out: {count}.",
     tooMany: "A share can hold up to 24 pieces. Unselect some first.",
     pieces: "Pieces ({count})",
     remove: "Remove {name}",

@@ -9,7 +9,7 @@ export function ShopSwitcher({ shops, current }: { shops: { id: string; name: st
   return (
     <select
       aria-label={t("nav.shop")}
-      className="min-h-11 max-w-52 rounded-xl border border-line bg-surface px-2 font-display text-lg"
+      className="wordmark min-h-11 w-full max-w-64 cursor-pointer truncate rounded-[2px] border-0 bg-transparent px-2 text-center font-display text-[15px] font-medium [text-align-last:center] hover:bg-raised"
       value={current}
       disabled={pending}
       onChange={(e) => start(() => setShop(e.target.value))}

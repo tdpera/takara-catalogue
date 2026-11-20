@@ -14,7 +14,7 @@ export default async function LoginPage() {
   const { t } = await getT();
   return (
     <AuthShell>
-      <h1 className="font-display text-[1.6rem] leading-tight">{t("login.title")}</h1>
+      <h1 className="font-display text-[1.7rem] leading-tight">{t("login.title")}</h1>
       <p className="mt-1 text-muted">{t("login.subtitle")}</p>
       <LoginForm />
     </AuthShell>

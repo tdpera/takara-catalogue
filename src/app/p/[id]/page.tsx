@@ -45,12 +45,12 @@ export default async function PiecePage({ params }: { params: Promise<{ id: stri
               <p className="eyebrow">
                 {t(`categories.${piece.category}` as MessageKey)} · <span dir="ltr">{piece.sku}</span>
               </p>
-              <h1 className="mt-1 font-display text-[2.25rem] leading-[1.1] [overflow-wrap:anywhere]">{piece.name}</h1>
+              <h1 className="mt-2 font-display text-[2.3rem] leading-[1.08] [overflow-wrap:anywhere]">{piece.name}</h1>
               <ul className="mt-3 flex flex-wrap gap-2 text-sm">
-                <li dir="ltr" className="num rounded-full bg-gold-soft px-3 py-1 text-ink">{piece.karat}K</li>
-                <li dir="ltr" className="num rounded-full border border-line bg-surface px-3 py-1">{formatGrams(piece.gross_g)}</li>
+                <li dir="ltr" className="num rounded-[2px] border border-gold-line/60 bg-gold-soft px-2.5 py-1 text-[13px]">{piece.karat}K</li>
+                <li dir="ltr" className="num rounded-[2px] border border-line px-2.5 py-1 text-[13px]">{formatGrams(piece.gross_g)}</li>
                 {piece.status !== "in_stock" && (
-                  <li className="rounded-full border border-warn/40 bg-warn-soft px-3 py-1 font-medium text-warn">{t(`status.${piece.status}`)}</li>
+                  <li className="caps rounded-[2px] border border-warn/40 bg-warn-soft px-2.5 py-1 text-[11px] font-semibold text-warn">{t(`status.${piece.status}`)}</li>
                 )}
               </ul>
             </div>

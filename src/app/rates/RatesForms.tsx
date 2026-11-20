@@ -126,7 +126,7 @@ export function RatesForm({ initial, current }: { initial: Values; current: Rate
       })}
 
       <div aria-live="polite">
-        {notice && <p className={notice.tone === "ok" ? "font-medium text-live" : errorText}>{t(notice.key)}</p>}
+        {notice && <p key={notice.key} className={"pop-in " + (notice.tone === "ok" ? "font-medium text-live" : errorText)}>{t(notice.key)}</p>}
       </div>
 
       {confirm ? (

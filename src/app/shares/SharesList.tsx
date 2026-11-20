@@ -35,7 +35,7 @@ function Row({ r }: { r: ShareRow }) {
           <p className="text-sm text-muted">{t("shares.pieces", { count: r.pieces })}</p>
         </div>
       </div>
-      <p className={`flex w-fit items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${r.views > 0 ? "bg-live/10 text-live" : "bg-raised text-muted"}`}>
+      <p className={`flex w-fit items-center gap-2 rounded-[2px] px-2.5 py-1 text-sm font-medium ${r.views > 0 ? "bg-live/10 text-live" : "bg-raised text-muted"}`}>
         <span aria-hidden="true" className={`size-2.5 shrink-0 rounded-full ${r.views > 0 ? "bg-live shadow-[0_0_0_3px] shadow-live/20" : "border-2 border-muted"}`} />
         {opened}
       </p>

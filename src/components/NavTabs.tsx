@@ -1,8 +1,9 @@
 "use client";
 /**
- * Navigation. Phones get a bottom tab bar (in thumb reach) with a raised gold Add button in the
- * middle; tablets and desktops get links in the header. Hidden on focused task screens that have
- * their own bottom bar (adding and editing a piece).
+ * Navigation. Phones get a bottom tab bar (in thumb reach) with a round ink Add button in the
+ * middle and a short gold line over the current tab; tablets and desktops get a centred row of
+ * text links under the shop name, underlined when current. The bottom bar is hidden on focused
+ * task screens that have their own bottom bar (adding and editing a piece).
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,7 +30,7 @@ export function NavTabs() {
   const path = usePathname();
   return (
     <nav aria-label={t("app.name")} className="hidden md:block">
-      <ul className="flex items-center gap-1">
+      <ul className="flex items-center justify-center gap-7 pb-1">
         {TABS.map((tab) => {
           const active = isActive(tab.href, path);
           return (
@@ -37,7 +38,7 @@ export function NavTabs() {
               <Link
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`inline-flex min-h-10 items-center rounded-full px-3.5 text-[15px] font-medium transition-colors ${active ? "bg-ink text-paper" : "text-muted hover:bg-raised hover:text-ink"}`}
+                className={`tab-line caps inline-flex min-h-10 items-center text-[12px] font-semibold transition-colors duration-200 ${active ? "text-ink" : "text-muted hover:text-ink"}`}
               >
                 {t(tab.key)}
               </Link>
@@ -63,9 +64,9 @@ export function BottomNav() {
         <Link
           href={tab.href}
           aria-current={active ? "page" : undefined}
-          className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] leading-tight font-medium ${active ? "text-ink" : "text-muted"}`}
+          className={`caps relative flex min-h-14 flex-col items-center justify-center gap-1 text-[10px] leading-tight font-semibold transition-colors duration-200 ${active ? "nav-mark text-ink" : "text-muted"}`}
         >
-          <tab.Icon size={22} className={active ? "stroke-[2.2] text-gold" : ""} />
+          <tab.Icon size={21} className={`transition-transform duration-300 ${active ? "-translate-y-px stroke-[1.9]" : "stroke-[1.6]"}`} />
           <span className="max-w-full truncate px-0.5">{t(tab.key)}</span>
         </Link>
       </li>
@@ -74,17 +75,17 @@ export function BottomNav() {
   return (
     <nav
       aria-label={t("app.name")}
-      className="bottom-nav fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+      className="bottom-nav fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
     >
-      <ul className="mx-auto flex max-w-lg items-end px-1">
+      <ul className="mx-auto flex max-w-lg items-center px-1">
         {item(TABS[0])}
         {item(TABS[1])}
         <li className="flex flex-1 justify-center">
           <Link
             href="/add"
-            className="-mt-5 mb-1 flex size-14 items-center justify-center rounded-full bg-gold-gradient text-[#1c1408] shadow-lift ring-4 ring-paper transition active:scale-95 motion-reduce:transform-none"
+            className="add-btn flex size-12 items-center justify-center rounded-full bg-primary text-on-primary shadow-[0_6px_18px_rgb(22_19_15/0.18)] motion-reduce:transform-none"
           >
-            <IconPlus size={26} className="stroke-[2.4]" />
+            <IconPlus size={22} className="stroke-[2]" />
             <span className="sr-only">{t("home.addPiece")}</span>
           </Link>
         </li>

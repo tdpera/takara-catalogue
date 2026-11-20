@@ -6,7 +6,7 @@ import { getLocale } from "@/i18n/server";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import { SPLASH_SCRIPT, Splash } from "@/components/Splash";
 import { makeT } from "@/i18n";
-import { display, mono } from "./fonts";
+import { display, sans } from "./fonts";
 
 export const metadata: Metadata = {
   title: { default: "Takara", template: "%s · Takara" },
@@ -20,8 +20,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f4ef" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f0e0c" },
+    { media: "(prefers-color-scheme: light)", color: "#fbf9f5" },
+    { media: "(prefers-color-scheme: dark)", color: "#100e0b" },
   ],
 };
 
@@ -30,12 +30,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const t = makeT(locale);
   return (
     // suppressHydrationWarning: the splash script may add data-splash to <html> before React loads.
-    <html lang={locale} dir={dirFor(locale)} className={`${display.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html lang={locale} dir={dirFor(locale)} className={`${display.variable} ${sans.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: SPLASH_SCRIPT }} />
       </head>
       <body className="min-h-dvh antialiased">
-        <Splash name={t("app.name")} tagline={t("app.tagline")} />
+        <Splash name={t("app.name")} tagline={t("app.tagline")} city={t("app.city")} />
         <a
           href="#main"
           className="sr-only z-50 rounded-xl bg-ink px-4 py-3 font-semibold text-paper focus:not-sr-only focus:fixed focus:start-3 focus:top-3"

@@ -14,6 +14,7 @@ import { cleanQuery, filterHref, STATUSES, type Filters as F } from "@/lib/catal
 import { input } from "@/components/ui";
 import { IconSearch } from "@/components/icons";
 
+/** Small square option box (karat, status). */
 function Chip({ href, on, children }: { href: string; on: boolean; children: React.ReactNode }) {
   return (
     <Link
@@ -21,16 +22,31 @@ function Chip({ href, on, children }: { href: string; on: boolean; children: Rea
       scroll={false}
       prefetch={false}
       aria-current={on ? "true" : undefined}
-      className={`inline-flex min-h-10 shrink-0 items-center rounded-full border px-4 text-sm whitespace-nowrap transition-colors ${on ? "border-ink bg-ink font-semibold text-paper" : "border-line/80 bg-surface text-ink hover:border-ink/25"}`}
+      className={`inline-flex min-h-10 shrink-0 items-center rounded-[2px] border px-3.5 text-[13px] whitespace-nowrap transition-colors duration-200 ${on ? "border-ink bg-ink font-semibold text-paper" : "border-line bg-transparent text-ink hover:border-ink/40"}`}
     >
       {children}
     </Link>
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+/** Category: a text tab in small capitals, underlined when current (the line draws in). */
+function Tab({ href, on, children }: { href: string; on: boolean; children: React.ReactNode }) {
   return (
-    <div role="group" aria-label={label} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+    <Link
+      href={href}
+      scroll={false}
+      prefetch={false}
+      aria-current={on ? "true" : undefined}
+      className={`tab-line caps inline-flex min-h-11 shrink-0 items-center text-[12px] font-semibold whitespace-nowrap transition-colors duration-200 ${on ? "text-ink" : "text-muted hover:text-ink"}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function Row({ label, children, className = "gap-2" }: { label: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div role="group" aria-label={label} className={`no-scrollbar -mx-4 flex overflow-x-auto px-4 ${className}`}>
       {children}
     </div>
   );
@@ -67,7 +83,7 @@ export function Filters({ f }: { f: F }) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <form
         role="search"
         action="/"
@@ -87,7 +103,7 @@ export function Filters({ f }: { f: F }) {
           autoComplete="off"
           maxLength={60}
           placeholder={t("catalogue.search")}
-          className={input + " rounded-full border-transparent bg-surface ps-11 pe-24 shadow-card focus:border-ink/30"}
+          className={input + " ps-11 pe-24"}
           value={q}
           onChange={(e) => search(e.target.value)}
         />
@@ -99,14 +115,6 @@ export function Filters({ f }: { f: F }) {
           {pending ? t("catalogue.searching") : ""}
         </span>
       </form>
-      <Row label={t("catalogue.filterCategory")}>
-        <Chip href={filterHref(f, { category: null })} on={!f.category}>{t("catalogue.allCategories")}</Chip>
-        {CATEGORIES.map((c) => (
-          <Chip key={c} href={filterHref(f, { category: f.category === c ? null : c })} on={f.category === c}>
-            {t(`categories.${c}`)}
-          </Chip>
-        ))}
-      </Row>
       <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
         <div role="group" aria-label={t("catalogue.filterKarat")} className="flex shrink-0 gap-2">
         <Chip href={filterHref(f, { karat: null })} on={!f.karat}>{t("catalogue.allKarats")}</Chip>
@@ -127,5 +135,20 @@ export function Filters({ f }: { f: F }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Category tabs, shown under the rates like a jeweller's website menu. */
+export function CategoryTabs({ f }: { f: F }) {
+  const { t } = useT();
+  return (
+    <Row label={t("catalogue.filterCategory")} className="gap-6">
+        <Tab href={filterHref(f, { category: null })} on={!f.category}>{t("catalogue.allCategories")}</Tab>
+        {CATEGORIES.map((c) => (
+          <Tab key={c} href={filterHref(f, { category: f.category === c ? null : c })} on={f.category === c}>
+            {t(`categories.${c}`)}
+          </Tab>
+        ))}
+    </Row>
   );
 }

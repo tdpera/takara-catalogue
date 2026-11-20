@@ -59,8 +59,8 @@ export default async function RatesPage() {
       <main id="main" className="mx-auto max-w-3xl space-y-6 px-4 py-6">
         <h1 className="font-display text-[2rem] leading-tight">{t("rates.title")}</h1>
 
-        <section className="rounded-3xl bg-ticker p-5 text-ticker-muted shadow-lift" aria-labelledby="current-h">
-          <h2 id="current-h" className="eyebrow text-ticker-muted!">{t("rates.current")}</h2>
+        <section className="border-y border-ink/80 py-4" aria-labelledby="current-h">
+          <h2 id="current-h" className="eyebrow">{t("rates.current")}</h2>
           {anyRate ? (
             <table className="mt-2 w-full">
               <thead className="sr-only">
@@ -70,18 +70,18 @@ export default async function RatesPage() {
                   <th scope="col">{t("rates.setAt", { time: "" })}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10">
-                {KARATS.map((k) => {
+              <tbody className="divide-y divide-line">
+                {KARATS.map((k, i) => {
                   const r = rates[k];
                   const today = r && isRateToday(r.set_at);
                   return (
-                    <tr key={k}>
-                      <th scope="row" className="py-3 pe-3 text-start text-lg font-semibold text-[#f2eee7]">{k}K</th>
+                    <tr key={k} className="rate-in" style={{ "--i": i } as React.CSSProperties}>
+                      <th scope="row" className="py-3.5 pe-3 text-start font-display text-xl font-medium">{k}K</th>
                       <td className="py-3 pe-3">
-                        <span dir="ltr" className="num text-[1.6rem] leading-none text-ticker-gold">{r ? formatRate(r.aed_per_g) : "—"}</span>
-                        {r && <span className="ms-1.5 text-xs">AED/g</span>}
+                        <span dir="ltr" className="num text-[1.65rem] leading-none font-medium">{r ? formatRate(r.aed_per_g) : "—"}</span>
+                        {r && <span className="ms-1.5 text-xs text-muted">AED/g</span>}
                       </td>
-                      <td className={"py-3 text-end text-xs " + (r && !today ? "font-medium text-[#f0b04a]" : "")}>
+                      <td className={"py-3 text-end text-xs " + (r && !today ? "font-semibold text-warn" : "text-muted")}>
                         {r && t("rates.setAt", { time: formatDubaiDateTime(r.set_at, locale) })}
                       </td>
                     </tr>

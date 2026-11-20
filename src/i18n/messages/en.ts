@@ -1,6 +1,6 @@
 // English is the source language. Every other locale must provide the same keys (checked by TypeScript).
 const en = {
-  app: { name: "Takara", tagline: "Your shop's catalogue, priced at today's gold rate." },
+  app: { name: "Takara", tagline: "Your shop's catalogue, priced at today's gold rate.", city: "Dubai" },
   common: {
     skip: "Skip to content",
     retry: "Try again",
@@ -206,6 +206,7 @@ const en = {
     err_error: "AI fill didn't work. Fill the details by hand.",
   },
   catalogue: {
+    heading: "The Collection",
     title: "Catalogue",
     search: "Search by name or SKU",
     searchLabel: "Search pieces",

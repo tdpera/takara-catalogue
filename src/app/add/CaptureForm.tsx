@@ -15,7 +15,7 @@ import { btn, btnPrimary, errorText, hint, input, label } from "@/components/ui"
 import { LOCALE_NAMES } from "@/i18n";
 import { CATEGORIES, DESC_LANGS, type Category, type DescLang, type Descriptions, type AiSuggestions } from "@/lib/ai/shared";
 import { requestAiFill, type AiFillError } from "@/lib/ai/client";
-import { IconCamera, IconCheck, IconSparkles, IconVideo } from "@/components/icons";
+import { IconCamera, IconSparkles, IconVideo } from "@/components/icons";
 
 // Fields AI fill can suggest. A field the salesperson has edited for this piece is never overwritten.
 type AiField = "name" | "karat" | "category" | "weight" | "descriptions";
@@ -307,8 +307,10 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
       <div aria-live="polite" className="space-y-2">
         {!online && <p className="rounded-2xl border border-warn/40 bg-warn-soft p-3 text-sm">{t("add.offline")}</p>}
         {notice && (
-          <p className="flex items-start gap-2 rounded-2xl border border-live/30 bg-surface p-3 font-medium text-live shadow-card">
-            <IconCheck size={20} className="mt-px stroke-[2.4]" />
+          <p key={count} className="pop-in flex items-start gap-2 rounded-2xl border border-live/30 bg-surface p-3 font-medium text-live">
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" className="tick mt-px shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m5 12.5 4.5 4.5L19 7.5" pathLength={30} />
+            </svg>
             <span>
               {notice} <span className="font-normal text-muted">({t("add.sessionCount", { count })})</span>
             </span>
@@ -334,7 +336,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
           }
         >
           {!photo && (
-            <span className="mb-1 flex size-[4.5rem] items-center justify-center rounded-full bg-gold-gradient text-[#1c1408] shadow-lift transition-transform group-active:scale-95 motion-reduce:transform-none">
+            <span className="mb-1 flex size-[4.5rem] items-center justify-center rounded-full bg-primary text-on-primary ring-1 ring-gold-line ring-offset-4 ring-offset-surface transition-transform group-active:scale-95 motion-reduce:transform-none">
               <IconCamera size={32} />
             </span>
           )}
@@ -359,7 +361,7 @@ export function CaptureForm(props: { shopId: string; userId: string; rates: Rate
       {/* AI fill */}
       <div className="space-y-2">
         <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl bg-surface p-3.5 shadow-card ring-1 ring-line/70">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gold-soft text-gold">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-gold-line/60 bg-gold-soft text-gold">
             <IconSparkles size={18} />
           </span>
           <span className="me-auto">

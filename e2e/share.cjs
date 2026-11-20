@@ -66,7 +66,7 @@ async function capture(p, { karat, category, weight, video, name }) {
 
   // ---------- compose
   await p.goto(base + '/'); await p.waitForLoadState('networkidle');
-  const cardPrice = async (name) => (await p.locator('main ul > li', { hasText: name }).locator('p.font-display span').innerText()).trim();
+  const cardPrice = async (name) => (await p.locator('main ul > li', { hasText: name }).locator('[data-price]').innerText()).trim();
   const bangleCatalogue = await cardPrice('Rope bangle');
   const earCatalogue = await cardPrice('Jhumka earrings');
   for (const nm of ['Rope bangle', 'Jhumka earrings', 'Box chain']) await p.getByRole('button', { name: new RegExp(`Select ${nm}`) }).click();
@@ -146,7 +146,7 @@ async function capture(p, { karat, category, weight, video, name }) {
   await c.goto(link); await c.waitForLoadState('networkidle');
   check("opens in the client's language (Arabic, right-to-left)", (await c.locator('[dir=rtl][lang=ar]').count()) > 0 && await visible(c.getByRole('heading', { name: 'مختارة لك' })));
   check('shop name and both pieces, in order', await visible(c.getByText('Al Fahidi Jewellers').first()) && (await c.locator('main ul > li h2').allInnerTexts()).join('|') === 'Rope bangle|Jhumka earrings');
-  const pubPrice = (await c.locator('main ul > li').first().locator('span.font-display').innerText()).trim();
+  const pubPrice = (await c.locator('main ul > li').first().locator('[data-price]').innerText()).trim();
   check('live price matches the catalogue', pubPrice === bangleCatalogue, pubPrice);
   check('spin viewer for the piece with a spin', await visible(c.getByRole('slider').first()));
   const html = await c.content();
@@ -178,7 +178,7 @@ async function capture(p, { karat, category, weight, video, name }) {
   await p.getByText("Today's rates are saved").waitFor();
   sql("update pieces set status='sold' where name='Jhumka earrings'");
   await c.goto(link + '?lang=en'); await c.waitForLoadState('networkidle');
-  const pub2 = (await c.locator('main ul > li').first().locator('span.font-display').innerText()).trim();
+  const pub2 = (await c.locator('main ul > li').first().locator('[data-price]').innerText()).trim();
   check('price follows the new gold rate', pub2 !== bangleCatalogue, `${bangleCatalogue} → ${pub2}`);
   check('a piece sold since shows as Sold, without a price', await visible(c.locator('main ul > li').nth(1).getByText('Sold')));
 

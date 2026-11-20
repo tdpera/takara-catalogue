@@ -19,7 +19,7 @@ export function LanguagePicker({ compact = false }: { compact?: boolean }) {
       className={
         compact
           ? "absolute inset-0 cursor-pointer appearance-none opacity-0"
-          : "min-h-11 rounded-full border border-line bg-surface px-4 text-ink"
+          : "min-h-11 rounded-[2px] border border-line bg-surface px-4 text-ink"
       }
       value={locale}
       disabled={pending}
@@ -35,7 +35,7 @@ export function LanguagePicker({ compact = false }: { compact?: boolean }) {
   );
   if (!compact) return select;
   return (
-    <span className="relative inline-flex min-h-10 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-[13px] font-medium text-ink focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-[var(--focus)] hover:border-ink/25">
+    <span className="relative inline-flex min-h-10 items-center gap-1.5 rounded-[2px] px-2 text-[12px] font-semibold text-ink transition-colors focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-[var(--focus)] hover:bg-raised">
       <IconGlobe size={16} className="text-muted" />
       <span aria-hidden="true" lang={locale}>{SHORT[locale]}</span>
       {select}

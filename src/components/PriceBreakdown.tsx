@@ -38,7 +38,7 @@ export function PriceBreakdown({
   const res = priceOf(piece, rates, vatEnabled);
   if (!res.ok) {
     return (
-      <p role="status" className="rounded-xl border border-line p-3 text-muted">
+      <p role="status" className="rounded-[2px] border border-line p-3 text-muted">
         {t(ERR[res.error], { karat: piece.karat })}
       </p>
     );
@@ -88,14 +88,14 @@ export function PriceBreakdown({
     return (
       <div aria-live="polite">
         <p className="eyebrow">{t(p.vatEnabled ? "price.priceInclVat" : "price.price")}</p>
-        <p className="mt-1 font-display text-[2.75rem] leading-none text-gold">
+        <p className="mt-1.5 font-display text-[2.75rem] leading-none">
           <span dir="ltr">{formatAED(p.totalWhole)}</span>
         </p>
         {note}
         <details className="group mt-4 border-t border-line pt-1">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 font-medium [&::-webkit-details-marker]:hidden">
             {t("price.breakdown")}
-            <IconChevron size={18} className="text-muted transition-transform group-open:rotate-90" />
+            <IconChevron size={18} className="text-muted transition-transform duration-300 group-open:rotate-90" />
           </summary>
           <table className="w-full border-collapse">
             <caption className="sr-only">{t("price.breakdown")}</caption>

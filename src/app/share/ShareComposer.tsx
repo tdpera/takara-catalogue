@@ -317,8 +317,13 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
             <IconLink size={18} /> {creating ? t("share.creating") : t("share.createLink")}
           </button>
         ) : (
-          <div className="space-y-3">
-            <p role="status" className="text-sm text-live">{t("share.linkReady", { date: formatDubaiDateTime(created.expiresAt, locale) })}</p>
+          <div className="pop-in space-y-3">
+            <p role="status" className="flex items-center gap-2 text-sm font-medium text-live">
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" className="tick shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m5 12.5 4.5 4.5L19 7.5" pathLength={30} />
+              </svg>
+              {t("share.linkReady", { date: formatDubaiDateTime(created.expiresAt, locale) })}
+            </p>
             <div className="flex gap-2">
               <label htmlFor="sh-link" className="sr-only">{t("share.link")}</label>
               <input id="sh-link" dir="ltr" readOnly className={input + " text-start text-sm"} value={created.url} onFocus={(e) => e.target.select()} />

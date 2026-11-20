@@ -39,7 +39,7 @@ export function ClientsManager({ shopId, initial }: { shopId: string; initial: (
               <div className="flex items-center gap-3">
                 <Avatar name={c.name} size={44} />
                 <p className="me-auto min-w-0 truncate font-semibold">{c.name}</p>
-                <p className="rounded-full bg-raised px-2.5 py-0.5 text-sm text-muted">{LOCALE_NAMES[c.language]}</p>
+                <p className="rounded-[2px] border border-line px-2 py-0.5 text-sm text-muted">{LOCALE_NAMES[c.language]}</p>
               </div>
               {c.phone && (
                 <p className="text-sm">

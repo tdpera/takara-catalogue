@@ -2,7 +2,7 @@ import type { Messages } from "./en";
 
 // Hindi. Needs review by a native speaker before launch.
 const hi: Messages = {
-  app: { name: "ताकारा", tagline: "आपकी दुकान का कैटलॉग, आज के सोने के रेट पर।" },
+  app: { name: "ताकारा", tagline: "आपकी दुकान का कैटलॉग, आज के सोने के रेट पर।", city: "दुबई" },
   common: {
     skip: "सामग्री पर जाएँ",
     retry: "फिर कोशिश करें",
@@ -208,6 +208,7 @@ const hi: Messages = {
     err_error: "AI से भरना नहीं हो सका। विवरण हाथ से भरें।",
   },
   catalogue: {
+    heading: "संग्रह",
     title: "कैटलॉग",
     search: "नाम या SKU से खोजें",
     searchLabel: "पीस खोजें",

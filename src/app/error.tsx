@@ -13,7 +13,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   }, [error]);
   return (
     <main id="main" className="mx-auto flex min-h-[70dvh] max-w-md flex-col items-center justify-center gap-4 px-4 py-16 text-center">
-      <Logo size={48} className="opacity-80" />
+      <Logo size={48} draw />
       <h1 className="font-display text-[1.6rem] leading-tight">{t("common.error")}</h1>
       <div className="flex flex-wrap justify-center gap-2">
         <button type="button" className={btnPrimary} onClick={reset}>{t("common.retry")}</button>

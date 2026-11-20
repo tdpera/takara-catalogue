@@ -1,65 +1,75 @@
 @import "tailwindcss";
 
-/* Colour tokens. Warm ivory, near-black and gold, like a jeweller's window: gold is kept for
-   prices and highlights, primary actions are ink. Light by default; dark follows the phone.
-   Every text/background pair is at least 4.5:1 (checked for both themes). */
+/* "Maison" design (design 01): a classic fine-jewellery house. Ivory paper, near-black ink and
+   fine gold lines; Bodoni Moda for names and titles, Manrope for everything else; flat surfaces
+   separated by hairlines instead of shadows. Light by default; dark follows the phone.
+   Every text/background pair is at least 4.5:1 in both themes (gold text included: --gold is a
+   little deeper than the decorative --gold-line). */
 :root {
-  --paper: #f6f4ef;
+  --paper: #fbf9f5;
   --surface: #ffffff;
-  --raised: #fbfaf7;
-  --ink: #1c1a17;
-  --muted: #67615a;
-  --line: #e5e0d5;
-  --gold: #8a6013;
-  --gold-soft: #f3e9d2;
+  --raised: #f4f0e8;
+  --tile: #f2eee6;
+  --ink: #16130f;
+  --muted: #6e665c;
+  --line: #e7e1d6;
+  --gold: #86621f;
+  --gold-line: #b08a45;
+  --gold-soft: #f4ead6;
   --live: #1b6f4b;
-  --warn: #94570a;
-  --warn-soft: #fbecd2;
+  --warn: #8f530a;
+  --warn-soft: #f7ecd8;
   --danger: #a3302a;
   --focus: #1a5fd0;
-  --primary: #1c1a17;
-  --on-primary: #f6f4ef;
-  --ticker: #1c1a17;
-  --ticker-muted: #b9b1a3;
-  --ticker-gold: #e2bd6e;
-  --gold-gradient: linear-gradient(135deg, #f3d58c 0%, #c8922f 48%, #8a5e14 100%);
-  --shadow: 0 1px 2px rgb(28 26 23 / 0.05), 0 8px 24px rgb(28 26 23 / 0.06);
-  --shadow-lift: 0 2px 6px rgb(28 26 23 / 0.07), 0 16px 36px rgb(28 26 23 / 0.1);
+  --primary: #16130f;
+  --on-primary: #fbf9f5;
+  --gold-gradient: linear-gradient(135deg, #e9cf8f 0%, #b88a3a 50%, #86621f 100%);
+  --shadow: 0 1px 2px rgb(22 19 15 / 0.03);
+  --shadow-lift: 0 12px 32px rgb(22 19 15 / 0.08), 0 2px 6px rgb(22 19 15 / 0.05);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #0f0e0c;
-    --surface: #1a1815;
-    --raised: #211e1a;
-    --ink: #f2eee7;
-    --muted: #a69f93;
-    --line: #2f2b25;
-    --gold: #dcb466;
-    --gold-soft: #3a3020;
+    --paper: #100e0b;
+    --surface: #18150f;
+    --raised: #1f1b15;
+    --tile: #1c1914;
+    --ink: #f3eee4;
+    --muted: #a69d8f;
+    --line: #2c2720;
+    --gold: #d6b26e;
+    --gold-line: #a8874a;
+    --gold-soft: #2f2617;
     --live: #4cc38a;
     --warn: #f0b04a;
-    --warn-soft: #3a2c14;
+    --warn-soft: #382a13;
     --danger: #ef7d74;
     --focus: #7fb0ff;
-    --primary: #dcb466;
-    --on-primary: #1a1408;
-    --ticker: #1a1815;
-    --ticker-muted: #a69f93;
-    --ticker-gold: #e2bd6e;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.35);
-    --shadow-lift: 0 2px 6px rgb(0 0 0 / 0.45), 0 16px 36px rgb(0 0 0 / 0.45);
+    --primary: #f3eee4;
+    --on-primary: #16130f;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-lift: 0 12px 32px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.35);
     color-scheme: dark;
   }
+}
+
+/* Squarer corners everywhere: Maison uses fine, almost square edges. */
+@theme {
+  --radius-lg: 3px;
+  --radius-xl: 3px;
+  --radius-2xl: 4px;
+  --radius-3xl: 4px;
 }
 
 @theme inline {
   --color-paper: var(--paper);
   --color-surface: var(--surface);
+  --color-tile: var(--tile);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-gold: var(--gold);
+  --color-gold-line: var(--gold-line);
   --color-gold-soft: var(--gold-soft);
   --color-live: var(--live);
   --color-warn: var(--warn);
@@ -68,20 +78,16 @@
   --color-raised: var(--raised);
   --color-primary: var(--primary);
   --color-on-primary: var(--on-primary);
-  --color-ticker: var(--ticker);
-  --color-ticker-muted: var(--ticker-muted);
-  --color-ticker-gold: var(--ticker-gold);
   --shadow-card: var(--shadow);
   --shadow-lift: var(--shadow-lift);
-  /* Interface text uses the phone's own fonts: cheap Android phones already ship Noto for
-     Arabic, Devanagari and Malayalam, so body text downloads nothing. */
-  --font-sans: system-ui, "Roboto", "Segoe UI", "Noto Sans", "Noto Sans Arabic", "Noto Sans Devanagari",
+  /* Manrope for Latin (see src/app/fonts.ts). Arabic, Hindi and Malayalam fall through to the
+     phone's own Noto fonts, which cheap Android phones already ship. */
+  --font-sans: var(--font-manrope), system-ui, "Roboto", "Segoe UI", "Noto Sans", "Noto Sans Arabic", "Noto Sans Devanagari",
     "Noto Sans Malayalam", sans-serif;
-  /* Display and figures (see src/app/fonts.ts). Latin only; other scripts fall through to the
-     phone's sans-serif, so Arabic, Hindi and Malayalam headings stay consistent with body text. */
-  --font-display: var(--font-dm-serif), Georgia, system-ui, "Noto Sans", "Noto Sans Arabic", "Noto Sans Devanagari",
-    "Noto Sans Malayalam", serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /* Bodoni Moda for names and titles; other scripts use the phone's serif faces. */
+  --font-display: var(--font-bodoni), "Didot", Georgia, "Noto Naskh Arabic", "Noto Serif Devanagari", "Noto Serif Malayalam",
+    "Noto Serif", serif;
+  --font-mono: var(--font-manrope), system-ui, sans-serif;
 }
 
 html { -webkit-text-size-adjust: 100%; }
@@ -98,49 +104,179 @@ body {
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 3px;
 }
 
-.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 500; letter-spacing: -0.01em; }
-.font-display { font-weight: 400; letter-spacing: 0.005em; }
+/* Figures: Manrope with lining, equal-width digits so weights and prices line up. */
+.num { font-family: var(--font-sans); font-variant-numeric: tabular-nums lining-nums; font-weight: 600; letter-spacing: 0; }
+.font-display { font-weight: 500; letter-spacing: 0; }
 
-/* Gold accent line used under the header and on hero areas. */
-.gold-rule { background: linear-gradient(90deg, transparent, var(--gold), transparent); height: 1px; }
+/* Small capitals with wide tracking, the house style for labels, tabs and buttons. Only for
+   Latin: spacing breaks joined Arabic letters and doesn't suit Devanagari or Malayalam. */
+.caps { text-transform: uppercase; letter-spacing: 0.14em; }
+.eyebrow { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); }
+.wordmark { text-transform: uppercase; letter-spacing: 0.22em; }
+:lang(ar) :is(.caps, .eyebrow, .wordmark), :lang(hi) :is(.caps, .eyebrow, .wordmark), :lang(ml) :is(.caps, .eyebrow, .wordmark) {
+  letter-spacing: 0;
+  text-transform: none;
+}
+:lang(ar) .eyebrow, :lang(hi) .eyebrow, :lang(ml) .eyebrow { font-size: 0.8rem; }
+
+/* Fine gold line: under titles and on hero areas. */
+.gold-rule { background: var(--gold-line); height: 1px; }
 .bg-gold-gradient { background-image: var(--gold-gradient); }
+/* Hairline rule that fades out at both ends. */
+.hairline { height: 1px; background: linear-gradient(90deg, transparent, var(--line) 12%, var(--line) 88%, transparent); }
 
-/* Small section labels. Letter-spacing only for Latin: it breaks joined Arabic letters and
-   doesn't suit Devanagari or Malayalam. */
-.eyebrow { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-:lang(ar) .eyebrow, :lang(hi) .eyebrow, :lang(ml) .eyebrow { letter-spacing: 0; text-transform: none; font-size: 0.8rem; }
+/* Photos on ivory tiles: the multiply blend lets a studio-white background sit on the tile. */
+.tile-img { mix-blend-mode: multiply; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tile-img { mix-blend-mode: normal; } }
 
-/* Edge fade on horizontally scrolling rows (the rate ticker). */
-.fade-x { mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%); }
+/* Edge fade on horizontally scrolling rows. */
+.fade-x { mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 20px), transparent 100%); }
 
 /* Leave room for the phone's bottom tab bar. */
 @media (max-width: 767px) {
-  body:has(.bottom-nav) { padding-bottom: calc(4.25rem + env(safe-area-inset-bottom)); }
+  body:has(.bottom-nav) { padding-bottom: calc(4.75rem + env(safe-area-inset-bottom)); }
 }
-
-/* Skeletons while a page loads on a slow connection. */
-@keyframes shimmer { 0% { opacity: 0.55; } 50% { opacity: 1; } 100% { opacity: 0.55; } }
-.skeleton { background: var(--line); border-radius: 0.75rem; animation: shimmer 1.4s ease-in-out infinite; }
 
 /* Horizontal chip rows: scroll without a visible scrollbar. */
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+/* ================================================================ Motion
+   Quiet and quick: things settle into place rather than bounce. Arrival animations fill
+   "backwards" only, so once finished they leave no transform or opacity behind (a lingering one
+   would create a stacking context and could cover the header's pop-up panels). One easing
+   curve for arrivals (--ease-out) and one for movement (--ease-in-out). Everything here is switched off for people
+   who ask their phone for reduced motion (last block), and nothing waits for an animation to be
+   usable: content is in its final place for screen readers and taps from the first frame. */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes draw-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes draw-stroke { to { stroke-dashoffset: 0; } }
+
+/* Page arrival: each navigation re-mounts app/template.tsx, so the page body fades in. Opacity
+   only: a transform here would re-anchor the fixed bottom bars inside <main> while it runs. */
+.route > main, .route > div > main { animation: fade 0.38s ease backwards; }
+
+/* Staggered arrival for lists: give each item --i (0, 1, 2…). */
+.stagger { animation: rise 0.5s var(--ease-out) backwards; animation-delay: calc(min(var(--i, 0), 10) * 55ms + 60ms); }
+
+/* Items further down appear as they scroll into view, where the browser supports it. */
+@supports (animation-timeline: view()) {
+  .reveal-scroll {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 55%;
   }
 }
 
+/* Photos fade up when they've loaded, then zoom slowly on hover (desktop) or hold (phone). */
+.photo-zoom { transition: transform 0.9s var(--ease-out); }
+@media (hover: hover) { .group:hover .photo-zoom { transform: scale(1.045); } }
+.group:active .photo-zoom { transform: scale(1.02); transition-duration: 0.3s; }
+.img-in { animation: fade 0.6s ease backwards; }
+
+/* Hairline that draws itself from the centre (header rule, section dividers). */
+.rule-in { transform-origin: center; animation: draw-x 0.9s var(--ease-in-out) 0.15s backwards; }
+
+/* Underline under the current tab, drawn from the centre when it becomes current. */
+.tab-line { position: relative; }
+.tab-line::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0.35rem;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transition: transform 0.35s var(--ease-out);
+}
+.tab-line:is([aria-current], [aria-selected="true"])::after { transform: scaleX(1); animation: draw-x 0.45s var(--ease-out) both; }
+@media (hover: hover) { .tab-line:hover::after { transform: scaleX(0.6); } .tab-line:is([aria-current], [aria-selected="true"]):hover::after { transform: scaleX(1); } }
+
+/* Tabs sitting on a hairline (description languages): the underline replaces the rule. */
+.tab-line.flush::after { bottom: 0; }
+
+/* Gold rates: figures rise in one after another, then a soft sheen passes once along the strip. */
+.rate-in { animation: rise 0.55s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
+.sheen { position: relative; overflow: hidden; }
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(214 178 110 / 0.28) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: sheen 1.6s var(--ease-in-out) 0.7s both;
+}
+@keyframes sheen { to { transform: translateX(100%); } }
+
+/* Bottom tab bar: a short gold line above the current tab, and a lift on the Add button. */
+.nav-mark::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1.5rem;
+  height: 2px;
+  margin-left: -0.75rem;
+  background: var(--gold-line);
+  animation: draw-x 0.4s var(--ease-out) both;
+}
+/* Tab bar labels: lighter tracking so the longest (Catalogue, Gold rates) fit a fifth of a phone. */
+.bottom-nav a.caps { letter-spacing: 0.06em; }
+:lang(ar) .bottom-nav a, :lang(hi) .bottom-nav a, :lang(ml) .bottom-nav a { font-size: 11px; }
+.add-btn { transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out); }
+.add-btn svg { transition: transform 0.45s var(--ease-out); }
+@media (hover: hover) { .add-btn:hover svg { transform: rotate(90deg); } }
+.add-btn:active { transform: scale(0.92); }
+
+/* Piece page: the photo is unveiled from the bottom, like a curtain rising. */
+.unveil { animation: unveil 0.9s var(--ease-in-out) backwards; }
+@keyframes unveil {
+  from { clip-path: inset(100% 0 0 0); transform: scale(1.04); }
+  to { clip-path: inset(0 0 0 0); transform: none; }
+}
+
+/* Opening a details block (price breakdown, help text): the contents slide down. */
+details[open] > :not(summary) { animation: rise 0.35s var(--ease-out) backwards; }
+details > summary .chev { transition: transform 0.3s var(--ease-out); }
+details[open] > summary .chev { transform: rotate(180deg); }
+
+/* Confirmations and messages: a small, calm pop. */
+.pop-in { animation: pop-in 0.4s var(--ease-out) backwards; }
+@keyframes pop-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+/* A tick that draws itself (link created, saved). */
+.tick path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw-stroke 0.5s var(--ease-out) 0.15s forwards; }
+
+/* The ring mark draws itself (empty states, sign-in). */
+.mark-draw .ring { stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw-stroke 1.1s var(--ease-in-out) 0.1s forwards; }
+.mark-draw .gem { stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw-stroke 0.6s var(--ease-out) 0.9s forwards; }
+
+/* Bottom selection bar slides up from the tab bar. */
+.slide-up { animation: slide-up 0.4s var(--ease-out) backwards; }
+@keyframes slide-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+/* Skeletons: a slow ivory sheen while a page loads on a slow connection. */
+@keyframes skeleton { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+.skeleton {
+  background: linear-gradient(100deg, var(--raised) 30%, var(--paper) 50%, var(--raised) 70%) 0 0 / 200% 100%;
+  border-radius: 2px;
+  animation: skeleton 1.6s ease-in-out infinite;
+}
+
 /* ---------------------------------------------------------------- Splash (launch animation)
-   Timeline: ring draws 0.05–0.8 s · stone pops 0.55 s · ripple 0.6–1.35 s · name 0.65 s ·
-   line and tagline 0.85–1.35 s · fade into the app 1.35–1.8 s. */
+   On ivory: the fine gold ring draws itself (0.1–1.0 s), the stone's outline follows (0.75 s),
+   TAKARA appears letter by letter (0.6–1.25 s), the gold rule extends (1.15 s), the tagline and
+   "Dubai" rise in (1.3 s), then the whole screen lifts away like a curtain (2.0–2.6 s). */
 .splash {
   position: fixed;
   inset: 0;
@@ -149,44 +285,63 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  background: radial-gradient(ellipse at 50% 42%, #2c2519 0%, #161411 55%, #0f0e0c 100%);
-  color: #f2eee7;
+  background: #fbf9f5;
+  color: #16130f;
   pointer-events: none;
-  animation: splash-out 0.45s cubic-bezier(0.7, 0, 0.3, 1) 1.35s forwards;
+  animation: splash-out 0.6s var(--ease-in-out) 2s forwards;
 }
 html[data-splash="off"] .splash { display: none; }
-@keyframes splash-out { to { opacity: 0; visibility: hidden; transform: scale(1.05); } }
+@keyframes splash-out {
+  from { clip-path: inset(0 0 0 0); }
+  to { clip-path: inset(0 0 100% 0); visibility: hidden; }
+}
+.splash-inner { display: flex; flex-direction: column; align-items: center; animation: splash-inner-out 0.6s var(--ease-in-out) 2s forwards; }
+@keyframes splash-inner-out { to { transform: translateY(-28px); opacity: 0; } }
 
-.splash-mark { animation: splash-mark 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; filter: drop-shadow(0 10px 30px rgb(226 189 110 / 0.25)); }
-@keyframes splash-mark { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
-
-.splash-ring { stroke-dasharray: 100; stroke-dashoffset: 100; animation: splash-draw 0.75s cubic-bezier(0.65, 0, 0.35, 1) 0.05s forwards; }
-@keyframes splash-draw { to { stroke-dashoffset: 0; } }
-
-.splash-gem { transform-box: fill-box; transform-origin: center; transform: scale(0); animation: splash-gem 0.5s cubic-bezier(0.34, 1.8, 0.64, 1) 0.55s forwards; }
-@keyframes splash-gem { 0% { transform: scale(0) rotate(-45deg); } 100% { transform: scale(1) rotate(0); } }
-
-.splash-ripple { transform-box: fill-box; transform-origin: center; opacity: 0; animation: splash-ripple 0.75s ease-out 0.6s forwards; }
-@keyframes splash-ripple { 0% { opacity: 0.7; transform: scale(1); } 100% { opacity: 0; transform: scale(1.9); } }
+.splash-ring { stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw-stroke 0.9s var(--ease-in-out) 0.1s forwards; }
+.splash-gem { stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw-stroke 0.5s var(--ease-out) 0.75s forwards; }
+.splash-glint { opacity: 0; transform-box: fill-box; transform-origin: center; animation: splash-glint 0.7s ease-out 1.2s forwards; }
+@keyframes splash-glint { 0% { opacity: 0; transform: scale(0.2) rotate(0); } 40% { opacity: 1; } 100% { opacity: 0; transform: scale(1.3) rotate(45deg); } }
 
 .splash-word {
-  margin-top: 1.25rem;
+  margin-top: 1.9rem;
+  display: flex;
   font-family: var(--font-display);
-  font-size: 2.4rem;
-  line-height: 1.1;
-  letter-spacing: 0.02em;
-  opacity: 0;
-  animation: splash-word 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.65s forwards;
+  font-size: 2.5rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.34em;
+  margin-inline-start: 0.34em;
 }
-@keyframes splash-word { from { opacity: 0; transform: translateY(10px); letter-spacing: 0.18em; } to { opacity: 1; transform: none; letter-spacing: 0.02em; } }
-/* No letter-spacing animation for scripts whose letters join or stack. */
-:lang(ar) .splash-word, :lang(hi) .splash-word, :lang(ml) .splash-word { letter-spacing: 0; animation-name: splash-rise; }
-@keyframes splash-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.splash-word > span { display: inline-block; opacity: 0; animation: splash-letter 0.55s var(--ease-out) both; animation-delay: calc(0.6s + var(--i, 0) * 0.09s); }
+@keyframes splash-letter { from { opacity: 0; transform: translateY(14px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+/* Arabic, Hindi and Malayalam names are one joined word: no spacing, one movement. */
+:lang(ar) .splash-word, :lang(hi) .splash-word, :lang(ml) .splash-word { letter-spacing: 0; margin-inline-start: 0; font-size: 2.3rem; }
 
-.splash-line { margin-top: 0.9rem; width: 7rem; height: 1px; background: linear-gradient(90deg, transparent, #e2bd6e, transparent); transform: scaleX(0); animation: splash-line 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.85s forwards; }
-@keyframes splash-line { to { transform: scaleX(1); } }
+.splash-line { margin-top: 1.6rem; width: 2.75rem; height: 1px; background: #b08a45; transform: scaleX(0); animation: draw-x 0.6s var(--ease-out) 1.15s forwards; }
+.splash-tag {
+  margin-top: 1.4rem;
+  max-width: 17rem;
+  padding: 0 1rem;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.8;
+  color: #6e665c;
+  opacity: 0;
+  animation: rise 0.6s var(--ease-out) 1.3s forwards;
+}
+.splash-foot { position: absolute; bottom: calc(3rem + env(safe-area-inset-bottom)); font-size: 0.66rem; font-weight: 600; color: #8f877b; opacity: 0; animation: fade 0.8s ease 1.45s forwards; }
 
-.splash-tag { margin-top: 0.8rem; max-width: 18rem; padding: 0 1rem; text-align: center; font-size: 0.9rem; color: #b9b1a3; opacity: 0; animation: splash-rise 0.5s ease 0.95s forwards; }
-
-@media (prefers-reduced-motion: reduce) { .splash { display: none; } }
+/* ---------------------------------------------------------------- Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal-scroll { animation: none !important; }
+  .splash { display: none; }
+}

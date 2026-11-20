@@ -2,7 +2,7 @@ import type { Messages } from "./en";
 
 // Arabic (Gulf/MSA). Needs review by a native speaker before launch.
 const ar: Messages = {
-  app: { name: "تاكارا", tagline: "كتالوج محلك، بأسعار الذهب اليوم." },
+  app: { name: "تاكارا", tagline: "كتالوج محلك، بأسعار الذهب اليوم.", city: "دبي" },
   common: {
     skip: "انتقل إلى المحتوى",
     retry: "حاول مجددًا",
@@ -208,6 +208,7 @@ const ar: Messages = {
     err_error: "تعذّرت التعبئة بالذكاء الاصطناعي. املأ التفاصيل يدويًا.",
   },
   catalogue: {
+    heading: "المجموعة",
     title: "الكتالوج",
     search: "ابحث بالاسم أو رمز القطعة",
     searchLabel: "البحث في القطع",

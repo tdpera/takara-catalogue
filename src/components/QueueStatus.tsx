@@ -52,13 +52,13 @@ export function QueueStatus({ userId }: { userId: string }) {
         aria-expanded={open}
         aria-controls="queue-panel"
         onClick={() => setOpen((o) => !o)}
-        className={`inline-flex min-h-10 items-center gap-2 rounded-full border bg-surface px-3 text-[13px] font-medium ${tone}`}
+        className={`inline-flex min-h-10 items-center gap-2 rounded-[2px] border bg-surface px-3 text-[13px] font-medium ${tone}`}
       >
         {active > 0 && online && !problem && <span aria-hidden="true" className="inline-block size-2 animate-pulse rounded-full bg-gold" />}
         <span role="status">{label}</span>
       </button>
       {open && (
-        <div id="queue-panel" className="fixed inset-x-4 top-16 z-40 max-h-[70vh] overflow-y-auto rounded-3xl border border-line bg-surface p-4 shadow-lift sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[22rem]">
+        <div id="queue-panel" className="pop-in fixed inset-x-4 top-16 z-40 max-h-[70vh] overflow-y-auto rounded-[2px] border border-line bg-surface p-4 shadow-lift sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[22rem]">
           <p className="mb-2 font-semibold">{t("queue.title")}</p>
           <ul className="divide-y divide-line">
             {items.map((p, i) => {

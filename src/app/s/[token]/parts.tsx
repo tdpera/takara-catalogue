@@ -34,7 +34,7 @@ export function PublicSpin({ name, src, frames, cols, poster }: { name: string; 
         <img src={poster} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
       )}
       <SpinViewer mode="full" src={src} frames={frames} cols={cols} label={t("piece.spinLabel", { name })} frameText={(n, total) => t("piece.frame", { n, total })} />
-      <span aria-hidden="true" className="pointer-events-none absolute bottom-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/65 px-3 py-1 text-xs text-white backdrop-blur-sm">
+      <span aria-hidden="true" className="caps pointer-events-none absolute bottom-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-[2px] bg-paper/90 px-2.5 py-1.5 text-[10px] font-semibold text-ink backdrop-blur-sm">
         <IconTurn size={14} /> {t("piece.dragHint")}
       </span>
     </div>

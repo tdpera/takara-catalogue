@@ -2,7 +2,7 @@ import type { Messages } from "./en";
 
 // Malayalam. Needs review by a native speaker before launch.
 const ml: Messages = {
-  app: { name: "തകാര", tagline: "നിങ്ങളുടെ കടയുടെ കാറ്റലോഗ്, ഇന്നത്തെ സ്വർണ്ണ നിരക്കിൽ." },
+  app: { name: "തകാര", tagline: "നിങ്ങളുടെ കടയുടെ കാറ്റലോഗ്, ഇന്നത്തെ സ്വർണ്ണ നിരക്കിൽ.", city: "ദുബായ്" },
   common: {
     skip: "ഉള്ളടക്കത്തിലേക്ക് പോകുക",
     retry: "വീണ്ടും ശ്രമിക്കുക",
@@ -208,6 +208,7 @@ const ml: Messages = {
     err_error: "AI പൂരിപ്പിക്കൽ പരാജയപ്പെട്ടു. വിവരങ്ങൾ കൈകൊണ്ട് നൽകുക.",
   },
   catalogue: {
+    heading: "ശേഖരം",
     title: "കാറ്റലോഗ്",
     search: "പേരോ SKU-വോ ഉപയോഗിച്ച് തിരയുക",
     searchLabel: "പീസുകൾ തിരയുക",

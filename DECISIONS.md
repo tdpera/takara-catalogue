@@ -438,3 +438,52 @@ views; all 123 unit, 54 database and 158 browser checks pass.
   flows into the animation.
 - **Measured:** no Lighthouse change (sign-in 97, catalogue 89–90); first paint 0.8 s; no
   accessibility violations while it plays; 159 browser checks pass.
+
+## 22. "Maison" design (chosen from 10 directions)
+The owner picked design 01 of ten mockups (fonts and layouts researched first: luxury jewellery
+brands pair one elegant serif for names with a plain sans for everything else, keep photos
+dominant, and rarely use more than two typefaces).
+- **Fonts:** Bodoni Moda for shop and piece names, page titles and the wordmark; Manrope for all
+  interface text and figures (tabular digits keep weights and prices aligned). Latin only,
+  self-hosted by Next. Manrope is preloaded (first text on every screen); Bodoni swaps in over a
+  size-matched fallback so it never competes with the first photos. Arabic, Hindi and Malayalam
+  use the phone's Noto faces (serif for titles, sans for text). IBM Plex Mono and DM Serif are gone.
+- **Colours:** ivory paper, near-black ink, fine gold. Gold text is a shade deeper than the gold
+  lines so it still passes 4.5:1; every text pair passes in light and dark.
+- **Shape:** flat surfaces divided by hairlines, near-square corners (a Tailwind radius override,
+  so every screen follows), small tracked capitals on buttons, tabs and labels. Tracking and
+  capitals switch off in Arabic, Hindi and Malayalam, where they break letters.
+- **Layout:** the shop name centred in spaced capitals; today's rates between two hairlines;
+  categories as underlined text tabs; "The Collection" in Bodoni italic; a borderless 2-column
+  grid of photos on ivory tiles with the name, karat and weight and price below; a bottom tab bar
+  with a round ink Add button. The client page and the shared catalogue image use the same style.
+- **App icon** redrawn to match (fine gold ring on ivory); the installed app's launch colour is
+  ivory, so opening from the home screen flows into the launch animation.
+
+### Motion
+Quiet and quick, CSS only (no animation library, no extra JavaScript). All of it is off for
+people who ask their phone for reduced motion, and nothing waits for an animation: content is in
+place for taps and screen readers from the first frame.
+- **Launch:** on ivory, the gold ring draws itself, the stone's outline follows with a glint, TAKARA
+  appears letter by letter (Arabic, Hindi and Malayalam names appear as one word), a gold rule
+  extends, the tagline rises, then the screen lifts like a curtain (about 2.6 s, once per session,
+  never on clients' links, taps pass through).
+- **Pages** fade in on every navigation (opacity only, so fixed bottom bars don't jump).
+- **Catalogue:** the first six cards arrive one after another; the rest rise in as they scroll
+  into view (where the browser supports scroll-driven animation; elsewhere they're simply there).
+  Photos fade in and zoom slowly on hover or press.
+- **Tabs:** the underline draws from the centre; the current bottom tab gets a short gold line;
+  the Add button's plus turns on hover and the button gives on press.
+- **Rates:** figures rise in one by one, then a soft gold sheen passes once along the strip.
+- **Piece page:** the photo is unveiled from the bottom like a curtain; the price breakdown slides
+  open.
+- **Feedback:** confirmations pop in; a tick draws itself when a piece is saved or a link is
+  created; the mark draws itself on empty, error and sign-in screens; the selection bar slides up;
+  loading skeletons have a slow ivory sheen.
+- **Measured:** 159 browser checks, 123 unit and 54 database tests pass; no accessibility
+  violations or sideways scrolling in 76 page views (light, dark, Arabic, desktop); Lighthouse
+  mobile: catalogue 91 (largest paint 3.2 s, slightly faster than before), piece 94, client page
+  92, sign-in 97; accessibility and best practices 100 everywhere. Main-thread work on the
+  catalogue is up a little (about 120 ms of blocking time under 4× CPU throttling, from about 35),
+  still within Lighthouse's "good" range; tests with all animations switched off showed the same
+  noise, so the animations aren't the cause.

@@ -13,7 +13,7 @@ export function DescriptionTabs({ descriptions }: { descriptions: Descriptions }
   const text = descriptions[lang];
   return (
     <div>
-      <div role="tablist" aria-label={t("piece.descLangs")} className="no-scrollbar mb-4 flex gap-1 overflow-x-auto rounded-full border border-line bg-raised p-1">
+      <div role="tablist" aria-label={t("piece.descLangs")} className="no-scrollbar mb-4 flex gap-6 overflow-x-auto border-b border-line">
         {DESC_LANGS.map((l, i) => (
           <button
             key={l}
@@ -35,7 +35,7 @@ export function DescriptionTabs({ descriptions }: { descriptions: Descriptions }
               refs.current[n]?.focus();
               e.preventDefault();
             }}
-            className={`min-h-9 flex-1 rounded-full px-3 text-sm whitespace-nowrap transition-colors ${lang === l ? "bg-surface font-semibold text-ink shadow-sm" : "text-muted hover:text-ink"}`}
+            className={`tab-line flush min-h-11 text-[14px] whitespace-nowrap transition-colors duration-200 ${lang === l ? "font-semibold text-ink" : "text-muted hover:text-ink"}`}
           >
             {LOCALE_NAMES[l]}
           </button>
@@ -43,7 +43,7 @@ export function DescriptionTabs({ descriptions }: { descriptions: Descriptions }
       </div>
       <div role="tabpanel" id="desc-panel" aria-labelledby={`desc-tab-${lang}`} tabIndex={0}>
         {text ? (
-          <p lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} className="max-w-prose text-start text-[1.05rem] leading-relaxed whitespace-pre-wrap">
+          <p lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} className="pop-in max-w-prose text-start text-[1.05rem] leading-relaxed whitespace-pre-wrap">
             {text}
           </p>
         ) : (

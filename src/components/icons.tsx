@@ -147,20 +147,25 @@ export const IconChevron = (p: P) => (
   </Svg>
 );
 
-/** The app's mark: a gold ring with a stone, drawn as a gradient so it reads well at small sizes. */
-export function Logo({ size = 32, className = "" }: { size?: number; className?: string }) {
+/**
+ * The Takara mark, Maison style: a fine gold ring with the stone in outline. `draw` makes it draw
+ * itself once (empty states, sign-in); see .mark-draw in globals.css.
+ */
+export function Logo({ size = 32, className = "", draw = false }: { size?: number; className?: string; draw?: boolean }) {
+  // Hairlines get relatively heavier as the mark gets smaller, so it stays crisp at 16–28 px.
+  const sw = size <= 20 ? 2.6 : size <= 32 ? 2 : 1.5;
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" focusable="false" className={`shrink-0 ${className}`}>
-      <defs>
-        <linearGradient id="souq-gold" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#f6dc93" />
-          <stop offset="0.45" stopColor="#c9962f" />
-          <stop offset="1" stopColor="#7a5212" />
-        </linearGradient>
-      </defs>
-      <circle cx="24" cy="28" r="14" fill="none" stroke="url(#souq-gold)" strokeWidth="5.5" />
-      <path d="M24 4.5 30 10.5 24 16.5 18 10.5z" fill="url(#souq-gold)" />
-      <path d="M24 4.5 30 10.5H18z" fill="#fff6dc" opacity="0.55" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      aria-hidden="true"
+      focusable="false"
+      overflow="visible"
+      className={`shrink-0 text-gold-line ${draw ? "mark-draw" : ""} ${className}`}
+    >
+      <circle className="ring" cx="24" cy="28" r="14" fill="none" stroke="currentColor" strokeWidth={sw} pathLength={100} transform="rotate(-90 24 28)" />
+      <path className="gem" d="M24 4.5 30 10.5 24 16.5 18 10.5z" fill="none" stroke="currentColor" strokeWidth={sw * 0.9} strokeLinejoin="round" pathLength={40} />
     </svg>
   );
 }

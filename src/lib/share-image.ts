@@ -8,10 +8,25 @@ export const IMAGE_MAX = 6;
 const W = 1080;
 const PAD = 48;
 const GAP = 24;
-const GOLD = "#8a6216";
-const INK = "#16181d";
-const MUTED = "#5b616e";
-const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", "Noto Sans Devanagari", "Noto Sans Malayalam", sans-serif';
+// Maison colours (see globals.css).
+const PAPER = "#fbf9f5";
+const TILE = "#f2eee6";
+const LINE = "#e7e1d6";
+const GOLD = "#86621f";
+const INK = "#16130f";
+const MUTED = "#6e665c";
+const SCRIPTS = '"Noto Sans", "Noto Sans Arabic", "Noto Sans Devanagari", "Noto Sans Malayalam", sans-serif';
+
+/** The app's own fonts (from next/font's CSS variables), loaded before drawing; system fonts otherwise. */
+async function fonts(): Promise<{ sans: string; serif: string }> {
+  const css = getComputedStyle(document.documentElement);
+  const sans = `${css.getPropertyValue("--font-manrope").trim() || "system-ui"}, system-ui, ${SCRIPTS}`;
+  const serif = `${css.getPropertyValue("--font-bodoni").trim() || "Georgia"}, Georgia, ${SCRIPTS}`;
+  try {
+    await Promise.all([document.fonts.load(`500 52px ${serif}`), document.fonts.load(`600 32px ${sans}`), document.fonts.load(`400 28px ${sans}`)]);
+  } catch {}
+  return { sans, serif };
+}
 
 export type ImageItem = { name: string; karat: number; weight: string; price: string | null; photo: string | null };
 
@@ -77,7 +92,8 @@ export async function renderCatalogueImage(p: {
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#ffffff";
+  const { sans: FONT, serif: SERIF } = await fonts();
+  ctx.fillStyle = PAPER;
   ctx.fillRect(0, 0, W, H);
   ctx.textBaseline = "top";
   ctx.direction = p.rtl ? "rtl" : "ltr";
@@ -86,13 +102,13 @@ export async function renderCatalogueImage(p: {
 
   // Header
   ctx.fillStyle = INK;
-  ctx.font = `700 54px ${FONT}`;
+  ctx.font = `500 54px ${SERIF}`;
   ctx.fillText(wrap(ctx, p.shop, W - PAD * 2, 1)[0] ?? "", startX, PAD);
   ctx.fillStyle = MUTED;
-  ctx.font = `400 30px ${FONT}`;
-  ctx.fillText(p.dateLine, startX, PAD + 72);
+  ctx.font = `500 28px ${FONT}`;
+  ctx.fillText(p.dateLine, startX, PAD + 76);
   ctx.fillStyle = GOLD;
-  ctx.fillRect(PAD, headerH - 26, W - PAD * 2, 4);
+  ctx.fillRect(PAD, headerH - 28, W - PAD * 2, 2);
 
   const bitmaps = await Promise.all(items.map((i) => loadBitmap(i.photo)));
   items.forEach((it, i) => {
@@ -101,7 +117,7 @@ export async function renderCatalogueImage(p: {
     const visualCol = p.rtl ? cols - 1 - col : col;
     const x = PAD + visualCol * (cell + GAP);
     const y = headerH + row * (cell + textH + GAP);
-    ctx.fillStyle = "#eef0f3";
+    ctx.fillStyle = TILE;
     ctx.fillRect(x, y, cell, cell);
     const bmp = bitmaps[i];
     if (bmp) drawCover(ctx, bmp, x, y, cell);
@@ -114,7 +130,7 @@ export async function renderCatalogueImage(p: {
     }
     const tx = p.rtl ? x + cell : x;
     ctx.fillStyle = INK;
-    ctx.font = `700 32px ${FONT}`;
+    ctx.font = `500 34px ${SERIF}`;
     const nameLines = wrap(ctx, it.name, cell, 2);
     nameLines.forEach((l, k) => ctx.fillText(l, tx, y + cell + 18 + k * 40));
     const after = y + cell + 18 + nameLines.length * 40;
@@ -123,8 +139,8 @@ export async function renderCatalogueImage(p: {
     ctx.fillStyle = MUTED;
     ctx.font = `400 28px ${FONT}`;
     ctx.fillText(`${it.karat}K · ${it.weight}`, tx, after + 4);
-    ctx.fillStyle = GOLD;
-    ctx.font = `700 ${it.price ? 40 : 28}px ${FONT}`;
+    ctx.fillStyle = INK;
+    ctx.font = `700 ${it.price ? 38 : 28}px ${FONT}`;
     if (!it.price) ctx.direction = p.rtl ? "rtl" : "ltr";
     ctx.fillText(it.price ?? p.noPrice, tx, after + 46);
     ctx.direction = p.rtl ? "rtl" : "ltr";
@@ -132,7 +148,7 @@ export async function renderCatalogueImage(p: {
 
   // Footer note
   const fy = H - footerH + 24;
-  ctx.fillStyle = "#e3e5ea";
+  ctx.fillStyle = LINE;
   ctx.fillRect(PAD, fy - 12, W - PAD * 2, 2);
   ctx.fillStyle = MUTED;
   ctx.font = `400 28px ${FONT}`;

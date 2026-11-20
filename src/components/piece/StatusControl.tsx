@@ -32,11 +32,11 @@ export function StatusControl({ pieceId, status }: { pieceId: string; status: St
   return (
     <fieldset aria-busy={pending}>
       <legend className="eyebrow mb-3">{t("piece.status")}</legend>
-      <div className="flex gap-1 rounded-full border border-line bg-raised p-1">
+      <div className="flex gap-0.5 rounded-[2px] border border-line p-0.5">
         {STATUSES.map((s) => (
           <label key={s} className="relative flex-1">
             <input type="radio" name="status" className="peer sr-only" checked={value === s} onChange={() => choose(s)} />
-            <span className="flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full px-3 text-[15px] font-medium text-muted transition-colors peer-checked:bg-surface peer-checked:text-ink peer-checked:shadow-sm peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]">
+            <span className="flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-[1px] px-3 text-[14px] font-medium text-muted transition-colors duration-200 hover:text-ink peer-checked:bg-ink peer-checked:text-paper peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]">
               <span aria-hidden="true" className={`size-2 rounded-full ${DOT[s]}`} />
               {t(`status.${s}`)}
             </span>

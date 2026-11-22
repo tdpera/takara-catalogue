@@ -1,43 +1,59 @@
 /**
- * Launch animation, Maison style: on ivory, the fine gold ring draws itself, the stone's outline
- * follows with a small glint, the name appears letter by letter, a gold rule extends, then the
- * screen lifts away like a curtain. About 2.6 s, CSS only (see globals.css, "Splash").
- *
- * - Once per app session: a tiny script in <head> (SPLASH_SCRIPT) marks <html data-splash="off">
- *   before the first paint on later page loads, so it never flashes.
- * - Never blocks: the app renders underneath and taps pass through (pointer-events: none).
- * - Not on clients' share links (/s/…), which belong to the shop, and not at all for people who
- *   ask their phone for reduced motion.
+ * Launch animation, "through the ring" (CSS and SVG only; see globals.css, "Splash"):
+ *  1. On black velvet, molten gold runs round the ring and settles (a turbulence filter whose
+ *     strength falls to zero),
+ *  2. the diamond drops into its setting and flashes, with a burst of light rays,
+ *  3. TAKARA rises letter by letter in gold, with a light sweeping across it,
+ *  4. then the camera flies through the ring: the ring grows past the edges of the screen while
+ *     a hole the size of its centre opens onto the app underneath.
+ * About 2.8 s. Once per app session; never on clients' share links; never for people who ask
+ * their phone for reduced motion; taps pass straight through to the app.
  */
 export function Splash({ name, tagline, city }: { name: string; tagline: string; city: string }) {
   // Letter by letter only for Latin names: Arabic, Hindi and Malayalam letters join or stack.
   const latin = /^[A-Za-z]+$/.test(name);
   return (
     <div className="splash" aria-hidden="true">
-      <div className="splash-inner">
-        <svg width="92" height="92" viewBox="0 0 48 48" focusable="false" overflow="visible">
-          <circle
-            className="splash-ring"
-            cx="24"
-            cy="28"
-            r="14"
-            fill="none"
-            stroke="#b08a45"
-            strokeWidth="1.25"
-            pathLength={100}
-            transform="rotate(-90 24 28)"
-          />
-          <path
-            className="splash-gem"
-            d="M24 4.5 30 10.5 24 16.5 18 10.5z"
-            fill="none"
-            stroke="#b08a45"
-            strokeWidth="1.1"
-            strokeLinejoin="round"
-            pathLength={40}
-          />
-          <path className="splash-glint" d="M30.5 6.5 31.3 8.7 33.5 9.5 31.3 10.3 30.5 12.5 29.7 10.3 27.5 9.5 29.7 8.7z" fill="#d9b86f" />
-        </svg>
+      <svg className="splash-ring" viewBox="0 4 48 48" focusable="false" overflow="visible">
+        <defs>
+          <linearGradient id="sp-gold" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#fbe7b0" />
+            <stop offset="0.35" stopColor="#e2b85c" />
+            <stop offset="0.7" stopColor="#b8862f" />
+            <stop offset="1" stopColor="#f1d38c" />
+          </linearGradient>
+          <filter id="sp-molten" x="-30%" y="-30%" width="160%" height="160%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="7" result="n">
+              <animate attributeName="baseFrequency" values="0.09;0.05" dur="1.4s" fill="freeze" />
+            </feTurbulence>
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G">
+              <animate attributeName="scale" values="5;2.5;0" keyTimes="0;0.6;1" dur="1.4s" fill="freeze" />
+            </feDisplacementMap>
+          </filter>
+          <radialGradient id="sp-flash">
+            <stop offset="0" stopColor="#fffbea" />
+            <stop offset="0.35" stopColor="#ffe9a8" stopOpacity="0.8" />
+            <stop offset="1" stopColor="#ffe9a8" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <g filter="url(#sp-molten)">
+          <circle className="sp-band" cx="24" cy="28" r="14" fill="none" stroke="url(#sp-gold)" strokeWidth="2.6" pathLength={100} transform="rotate(-90 24 28)" />
+        </g>
+        <g className="sp-gem">
+          <path d="M24 4.5 30 10.5 24 16.5 18 10.5z" fill="url(#sp-gold)" />
+          <path d="M24 4.5 30 10.5H18z" fill="#fffaf0" opacity="0.7" />
+          <path d="M18 10.5h12M21 10.5 24 4.5 27 10.5M21 10.5l3 6 3-6" fill="none" stroke="#8a6013" strokeWidth="0.35" opacity="0.6" />
+        </g>
+        <g className="sp-rays" stroke="#ffe9a8" strokeWidth="0.45" strokeLinecap="round">
+          {Array.from({ length: 12 }, (_, i) => {
+            const a = (i / 12) * Math.PI * 2;
+            return <line key={i} x1={24 + Math.cos(a) * 5} y1={10.5 + Math.sin(a) * 5} x2={24 + Math.cos(a) * 11} y2={10.5 + Math.sin(a) * 11} />;
+          })}
+        </g>
+        <circle className="sp-flash" cx="24" cy="10.5" r="9" fill="url(#sp-flash)" />
+        <path className="sp-star" d="M24 2 25 9.5 32 10.5 25 11.5 24 19 23 11.5 16 10.5 23 9.5z" fill="#fffdf4" />
+      </svg>
+      <div className="splash-text">
         <p className="splash-word">
           {latin
             ? [...name.toUpperCase()].map((ch, i) => (

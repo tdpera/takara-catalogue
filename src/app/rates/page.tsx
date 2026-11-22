@@ -8,6 +8,7 @@ import { getT } from "@/i18n/server";
 import { AppHeader } from "@/components/AppHeader";
 import { card } from "@/components/ui";
 import { PriceCalculator, RatesForm, SettingsForm } from "./RatesForms";
+import { Odometer } from "@/components/Odometer";
 
 export const metadata: Metadata = { title: "Gold rates" };
 
@@ -78,7 +79,7 @@ export default async function RatesPage() {
                     <tr key={k} className="rate-in" style={{ "--i": i } as React.CSSProperties}>
                       <th scope="row" className="py-3.5 pe-3 text-start font-display text-xl font-medium">{k}K</th>
                       <td className="py-3 pe-3">
-                        <span dir="ltr" className="num text-[1.65rem] leading-none font-medium">{r ? formatRate(r.aed_per_g) : "—"}</span>
+                        <span dir="ltr" className="num text-[1.65rem] leading-none font-medium">{r ? <Odometer value={formatRate(r.aed_per_g)} /> : "—"}</span>
                         {r && <span className="ms-1.5 text-xs text-muted">AED/g</span>}
                       </td>
                       <td className={"py-3 text-end text-xs " + (r && !today ? "font-semibold text-warn" : "text-muted")}>

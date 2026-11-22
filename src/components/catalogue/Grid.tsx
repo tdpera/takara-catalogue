@@ -5,7 +5,7 @@
  */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "@/i18n/client";
 import type { MessageKey } from "@/i18n";
 import type { Card } from "@/lib/catalogue";
@@ -13,6 +13,8 @@ import { formatGrams } from "@/lib/format";
 import { SpinViewer } from "@/components/SpinViewer";
 import { btn, btnPrimary } from "@/components/ui";
 import { IconCheck, IconShare, IconTurn } from "@/components/icons";
+import { TiltTile } from "@/components/TiltTile";
+import { navigateWithMorph, vtReady } from "@/lib/view-transition";
 
 const KEY = (shop: string) => `souq.selection.${shop}`;
 
@@ -40,13 +42,21 @@ function useSelection(shopId: string) {
 
 function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; selected: boolean; onToggle: () => void }) {
   const { t } = useT();
+  const router = useRouter();
+  const tile = useRef<HTMLDivElement>(null);
+  // Coming back from this piece's page: the big photo flies back into this tile.
+  useEffect(() => vtReady(tile.current, c.id), [c.id]);
   const statusCls = c.status === "sold" ? "bg-ink text-paper" : "bg-paper/95 text-warn";
   // The first screenful arrives one after another; the rest appear as they scroll into view.
   const motion = index < 6 ? "stagger" : "reveal-scroll";
   return (
     <li style={{ "--i": index } as React.CSSProperties} className={`group relative ${motion}`}>
-      <Link href={`/p/${c.id}`} className="block focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[var(--focus)]">
-        <div className={`relative aspect-square overflow-hidden bg-tile transition-[outline-color] duration-200 ${selected ? "outline outline-1 outline-offset-4 outline-ink" : "outline-transparent"}`}>
+      <Link
+        href={`/p/${c.id}`}
+        onClick={(e) => navigateWithMorph(e, router, `/p/${c.id}`, tile.current)}
+        className="block focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[var(--focus)]"
+      >
+        <TiltTile ref={tile} className={`relative aspect-square overflow-hidden bg-tile ${selected ? "outline outline-1 outline-offset-4 outline-ink" : "outline-transparent"}`}>
           {c.photo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -74,10 +84,10 @@ function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; s
               {t(`status.${c.status}`)}
             </span>
           )}
-        </div>
+        </TiltTile>
         <div className="pt-3">
           <h2 className="line-clamp-2 font-display text-[16.5px] leading-snug [overflow-wrap:anywhere]">{c.name}</h2>
-          <p className="mt-1 text-[11.5px] font-medium tracking-[0.06em] text-muted">
+          <p className="mt-1 text-[12px] font-medium tracking-[0.05em] text-muted">
             <span dir="ltr" className="num font-medium">{c.karat}K · {formatGrams(c.gross_g)}</span>
             <span className="sr-only"> · {c.sku}</span>
           </p>

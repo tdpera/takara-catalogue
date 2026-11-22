@@ -158,6 +158,8 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   // ---------- detail
   await p.getByRole('link', { name: /ALF-0001/ }).click();
   await p.waitForURL(/\/p\//);
+  // The photo flies in from the grid (a view transition); wait until it has landed.
+  await p.waitForFunction(() => !document.documentElement.hasAttribute('data-vt'), null, { timeout: 5000 });
   const pieceUrl = p.url();
   const slider = p.getByRole('slider', { name: /360° view/ });
   await slider.waitFor();

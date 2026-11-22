@@ -487,3 +487,50 @@ place for taps and screen readers from the first frame.
   catalogue is up a little (about 120 ms of blocking time under 4× CPU throttling, from about 35),
   still within Lighthouse's "good" range; tests with all animations switched off showed the same
   noise, so the animations aren't the cause.
+
+## 23. Showcase round: introduction page, new launch, photo flights
+Brief: "a real wow factor… the most impressive jewellery site anyone has seen; it will be
+judged". Everything stays usable on a mid-range Android phone on shop Wi-Fi, accessible, and in
+four languages.
+- **Introduction page** (the signed-out home, /login), replacing the plain sign-in screen:
+  - **A live 3D gold ring with a diamond**, drawn on the phone's graphics chip by one ray-marched
+    shader (components/intro/ring-gl.ts, ~6 KB) instead of a 3D library (~150 KB). Gold is shaded
+    with a physically based Fresnel term against a procedural photo studio (soft boxes, strip
+    lights, warm floor); the diamond has reflections, a faked internal bounce with colour
+    dispersion and per-facet sparkle; gold dust drifts behind. It turns like a jeweller's
+    turntable (lingering where it faces you), spins with a sideways drag (vertical swipes still
+    scroll), tips with the mouse or an Android phone's tilt.
+  - Kind to phones: a still SVG ring shows instantly (and stays without WebGL); the live ring
+    starts after the launch animation, pauses off screen and in background tabs, draws at reduced
+    resolution and lowers it further if frames arrive late; nothing at all with Save-Data; one
+    still frame for reduced motion.
+  - Below the hero, scroll storytelling: a phone whose screen follows the step you're reading
+    (photograph on the scale with a scanning LCD and shutter flash → AI typing the name and
+    four-language descriptions → the price rolling to AED 11,643 with its breakdown → a WhatsApp
+    message landing, ticks turning blue), a split-flap gold-rate board, the tagline morphing
+    through English, Arabic, Hindi and Malayalam, four promises, then the sign-in form. The demo
+    figures are the app's own arithmetic; the board is labelled as example rates.
+  - Native scrolling only (no scroll-jacking). Scroll reveals, the story steps and the hero
+    parallax come from one small observer; without it everything is simply visible.
+- **Launch animation, "through the ring":** on black velvet, molten gold runs round the ring and
+  settles (an SVG turbulence filter easing to zero), the diamond drops in with a flash and rays,
+  TAKARA rises letter by letter with light sweeping across, then the camera flies through the
+  ring: one animated custom property both scales the ring past the screen and opens a hole the
+  size of its centre onto the app, so they always match. ~2.8 s, once per session, CSS/SVG only.
+  The installed app's launch colour is the same velvet.
+- **Photo flights:** tapping a piece makes its photo fly from the grid into the piece page, and
+  "← Catalogue" flies it back (View Transitions API; skipped where unsupported, for reduced motion
+  and for new-tab clicks; if the next page is slow we stop waiting after 0.45 s and cross-fade).
+  The page is marked with data-vt while a flight is on, which the browser tests wait for.
+- **Rolling figures:** prices and rates roll into place digit by digit; the intro's rate board
+  flips like a split-flap board. Pure CSS: the real digits stay in the page as transparent text,
+  so screen readers, copying and tests read the true value.
+- **Display-case photos:** catalogue and client-page photos tilt towards the mouse with a
+  reflection following it; on a phone a tap sends a glint across.
+- **Client page header** in black velvet with the shop's name in flowing gold.
+- **Measured:** 159 browser checks, 123 unit and 54 database tests pass; accessibility survey of
+  76 page views (light, dark, Arabic, desktop) clean; Lighthouse mobile: introduction page 95
+  (accessibility and best practices 100; its back/forward-cache check hangs in headless Chrome
+  and was skipped), catalogue 93, piece 94, client page 93. The launch animation now removes
+  itself completely when done (display: none), so nothing lingers over the app for tools or
+  assistive technology.

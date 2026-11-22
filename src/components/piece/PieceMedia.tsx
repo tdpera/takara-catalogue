@@ -1,9 +1,10 @@
 "use client";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useT } from "@/i18n/client";
 import type { Spin } from "@/lib/catalogue";
 import { SpinViewer } from "@/components/SpinViewer";
 import { IconTurn } from "@/components/icons";
+import { morphPending, vtReady } from "@/lib/view-transition";
 
 /** Big spin viewer and the photo, as tabs (the spin first when there is one). */
 export function PieceMedia({ name, photo, spin }: { name: string; photo: { full: string; thumb: string | null } | null; spin: Spin | null }) {
@@ -11,9 +12,13 @@ export function PieceMedia({ name, photo, spin }: { name: string; photo: { full:
   const [tab, setTab] = useState<"spin" | "photo">(spin ? "spin" : "photo");
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const list = (spin ? ["spin", "photo"] : ["photo"]) as ("spin" | "photo")[];
+  const box = useRef<HTMLDivElement>(null);
+  // Arriving from the catalogue with the photo flying in: skip the curtain, the flight is the entrance.
+  const [flying] = useState(morphPending);
+  useLayoutEffect(() => vtReady(box.current), []);
 
   const frame = (
-    <div className="unveil relative -mx-4 aspect-square overflow-hidden bg-tile md:mx-auto md:w-full md:max-w-[34rem]">
+    <div ref={box} data-piece-media className={`${flying ? "" : "unveil"} relative -mx-4 aspect-square overflow-hidden bg-tile md:mx-auto md:w-full md:max-w-[34rem]`}>
       {tab === "spin" && spin ? (
         <>
           {photo?.thumb && (

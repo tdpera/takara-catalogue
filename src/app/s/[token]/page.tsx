@@ -15,6 +15,8 @@ import { dirFor, isLocale, LOCALE_NAMES, LOCALES, makeT, type Locale, type Messa
 import { I18nProvider } from "@/i18n/client";
 import { PublicSpin, ViewBeacon } from "./parts";
 import { Logo } from "@/components/icons";
+import { Odometer } from "@/components/Odometer";
+import { TiltTile } from "@/components/TiltTile";
 
 export const dynamic = "force-dynamic";
 
@@ -76,12 +78,15 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
     <I18nProvider locale={locale}>
       <ViewBeacon token={token} />
       <div lang={locale} dir={dir} className="min-h-dvh bg-paper">
-        <header className="relative">
-          <div className="mx-auto flex max-w-3xl flex-col items-center px-4 pt-12 pb-6 text-center">
-            <Logo size={34} draw />
-            <h1 className="eyebrow mt-5 stagger" style={{ "--i": 1 } as React.CSSProperties}>{t("pub.title")}</h1>
-            <p className="wordmark mt-3 font-display text-[1.7rem] leading-[1.2] font-medium [overflow-wrap:anywhere] stagger" style={{ "--i": 2 } as React.CSSProperties}>{share.shop}</p>
-            <div aria-hidden="true" className="gold-rule rule-in mt-6 w-12" />
+        {/* Black velvet, where gold glows: the shop's name in gold, the client's languages below. */}
+        <header className="pub-hero relative overflow-hidden text-[#f3eee4]">
+          <div className="relative mx-auto flex max-w-3xl flex-col items-center px-4 pt-14 pb-7 text-center">
+            <Logo size={38} draw className="text-[#d9b46a]" />
+            <h1 className="eyebrow mt-5 stagger text-[#c9a35b]!" style={{ "--i": 1 } as React.CSSProperties}>{t("pub.title")}</h1>
+            <p className="wordmark mt-3 font-display text-[1.9rem] leading-[1.2] font-medium [overflow-wrap:anywhere] stagger" style={{ "--i": 2 } as React.CSSProperties}>
+              <span className="gold-text">{share.shop}</span>
+            </p>
+            <div aria-hidden="true" className="rule-in mt-6 h-px w-14 bg-[#c9a35b]" />
             <nav aria-label={t("pub.language")} className="mt-5">
               <ul className="flex flex-wrap justify-center gap-x-6 text-sm">
                 {LOCALES.map((l) => (
@@ -91,7 +96,7 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
                       lang={l}
                       hrefLang={l}
                       aria-current={l === locale ? "true" : undefined}
-                      className={`tab-line inline-flex min-h-11 items-center transition-colors duration-200 ${l === locale ? "font-semibold text-ink" : "text-muted hover:text-ink"}`}
+                      className={`tab-line inline-flex min-h-11 items-center transition-colors duration-200 ${l === locale ? "font-semibold text-[#f3eee4]" : "text-[#b9ad99] hover:text-[#f3eee4]"}`}
                     >
                       {LOCALE_NAMES[l]}
                     </a>
@@ -119,8 +124,10 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
                   {spin && p.spin ? (
                     <PublicSpin name={p.name} src={spin} frames={p.spin.frames} cols={p.spin.cols} poster={poster} />
                   ) : photo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photo} alt={t("piece.photoAlt", { name: p.name })} width={1600} height={1600} loading="lazy" className="img-in aspect-square w-full bg-tile object-cover" />
+                    <TiltTile className="relative aspect-square overflow-hidden bg-tile">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo} alt={t("piece.photoAlt", { name: p.name })} width={1600} height={1600} loading="lazy" className="img-in tile-img size-full object-cover" />
+                    </TiltTile>
                   ) : (
                     <div className="aspect-square bg-tile" />
                   )}
@@ -133,7 +140,13 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
                       <p className="pt-1 font-semibold text-muted">{t("pub.sold")}</p>
                     ) : (
                       <p className="flex flex-wrap items-baseline gap-2 pt-1">
-                        <span dir="ltr" data-price className={pr.ok ? "num text-[1.2rem] leading-tight font-semibold" : "font-semibold text-muted"}>{pr.ok ? formatAED(pr.price.totalWhole) : t("pub.priceInStore")}</span>
+                        {pr.ok ? (
+                          <span dir="ltr" data-price className="num text-[1.2rem] leading-tight font-semibold">
+                            AED <Odometer value={formatAED(pr.price.totalWhole).replace(/^\D+/, "")} />
+                          </span>
+                        ) : (
+                          <span data-price className="font-semibold text-muted">{t("pub.priceInStore")}</span>
+                        )}
                         {p.status === "reserved" && <span className="caps rounded-[2px] bg-warn-soft px-2 py-1 text-[10px] font-semibold text-warn">{t("status.reserved")}</span>}
                       </p>
                     )}

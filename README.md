@@ -20,6 +20,10 @@ are saved on the phone first and upload in the background.
 - **Catalogue:** grid with spins, filters, search, a piece page with a price breakdown, editing.
 - **Sharing:** private links with live prices and view tracking, a 1080 px catalogue image, and a
   WhatsApp button. Nothing is sent automatically.
+- **Design:** "Maison" (Bodoni Moda and Manrope on ivory, black velvet and gold). Signed-out
+  visitors get an introduction page with a live 3D gold ring (WebGL, no library) and the app's
+  story told as you scroll; photos fly between pages, prices roll into place. All motion is CSS
+  or small, guarded scripts, and switches off for reduced motion. See DECISIONS.md 22–23.
 
 Why things were built the way they were is in **[DECISIONS.md](DECISIONS.md)**.
 

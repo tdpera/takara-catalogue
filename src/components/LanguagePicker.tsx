@@ -11,7 +11,7 @@ const SHORT: Record<Locale, string> = { en: "EN", ar: "عربي", hi: "हिं
  * Language switch. "compact" shows a globe and a short code; the native select sits invisibly on
  * top, so the phone's own picker opens and screen readers announce a normal select.
  */
-export function LanguagePicker({ compact = false }: { compact?: boolean }) {
+export function LanguagePicker({ compact = false, className = "" }: { compact?: boolean; className?: string }) {
   const { locale, t } = useT();
   const [pending, start] = useTransition();
   const select = (
@@ -35,7 +35,7 @@ export function LanguagePicker({ compact = false }: { compact?: boolean }) {
   );
   if (!compact) return select;
   return (
-    <span className="relative inline-flex min-h-10 items-center gap-1.5 rounded-[2px] px-2 text-[12px] font-semibold text-ink transition-colors focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-[var(--focus)] hover:bg-raised">
+    <span className={`relative inline-flex min-h-10 items-center gap-1.5 rounded-[2px] px-2 text-[12px] font-semibold text-ink transition-colors focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-[var(--focus)] hover:bg-raised ${className}`}>
       <IconGlobe size={16} className="text-muted" />
       <span aria-hidden="true" lang={locale}>{SHORT[locale]}</span>
       {select}

@@ -5,6 +5,20 @@ import { priceOf, toDec, type PieceInput, type PriceError, type RateMap } from "
 import { isRateToday } from "@/lib/rates";
 import { formatAED, formatDubaiDateTime, formatGrams, formatRate } from "@/lib/format";
 import { IconChevron } from "./icons";
+import { Odometer } from "./Odometer";
+
+/** "AED 15,516" with the figures rolling into place (the currency stays still). */
+function RollingAmount({ text }: { text: string }) {
+  const m = /^(\D*)([\d.,]+)(\D*)$/.exec(text);
+  if (!m) return <span dir="ltr">{text}</span>;
+  return (
+    <span dir="ltr">
+      {m[1] && <span className="me-1.5 align-top text-[0.42em] leading-[2.2]">{m[1].trim()} </span>}
+      <Odometer value={m[2]} />
+      {m[3]}
+    </span>
+  );
+}
 
 const ERR: Record<PriceError, MessageKey> = {
   invalid_karat: "price.errKarat",
@@ -89,7 +103,7 @@ export function PriceBreakdown({
       <div aria-live="polite">
         <p className="eyebrow">{t(p.vatEnabled ? "price.priceInclVat" : "price.price")}</p>
         <p className="mt-1.5 font-display text-[2.75rem] leading-none">
-          <span dir="ltr">{formatAED(p.totalWhole)}</span>
+          <RollingAmount text={formatAED(p.totalWhole)} />
         </p>
         {note}
         <details className="group mt-4 border-t border-line pt-1">

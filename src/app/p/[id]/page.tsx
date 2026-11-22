@@ -9,11 +9,12 @@ import type { MessageKey } from "@/i18n";
 import { getT } from "@/i18n/server";
 import { AppHeader } from "@/components/AppHeader";
 import { PriceBreakdown } from "@/components/PriceBreakdown";
+import { BackLink } from "@/components/piece/BackLink";
 import { PieceMedia } from "@/components/piece/PieceMedia";
 import { DescriptionTabs } from "@/components/piece/DescriptionTabs";
 import { StatusControl } from "@/components/piece/StatusControl";
-import { btn, btnLink, btnPrimary, card } from "@/components/ui";
-import { IconBack, IconShare } from "@/components/icons";
+import { btn, btnPrimary, card } from "@/components/ui";
+import { IconShare } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Piece" };
 
@@ -32,9 +33,7 @@ export default async function PiecePage({ params }: { params: Promise<{ id: stri
     <>
       <AppHeader memberships={memberships} current={current} />
       <main id="main" className="mx-auto max-w-5xl px-4 pt-2 pb-16">
-        <Link href="/" className={btnLink + " text-sm"}>
-          <IconBack size={18} /> {t("piece.back")}
-        </Link>
+        <BackLink pieceId={piece.id} label={t("piece.back")} />
         <div className="mt-1 grid gap-6 md:grid-cols-[1.1fr_1fr] md:items-start md:gap-10">
           <div className="md:sticky md:top-32">
             <PieceMedia name={piece.name} photo={piece.photo} spin={piece.spin} />

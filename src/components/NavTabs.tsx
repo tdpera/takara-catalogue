@@ -9,19 +9,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useT } from "@/i18n/client";
 import type { MessageKey } from "@/i18n";
-import { IconCoins, IconGrid, IconPlus, IconSend, IconUsers } from "./icons";
+import { IconCoins, IconGrid, IconPlus, IconSend, IconStore, IconTray } from "./icons";
 
+// Wider screens show every section; phones keep four tabs and the Add button, with gold rates
+// inside Shop (today's rates are on every screen anyway, under the header).
 const TABS = [
   { href: "/", key: "nav.catalogue", Icon: IconGrid },
   { href: "/shares", key: "nav.shares", Icon: IconSend },
+  { href: "/trays", key: "nav.trays", Icon: IconTray },
   { href: "/rates", key: "nav.rates", Icon: IconCoins },
-  { href: "/team", key: "nav.team", Icon: IconUsers },
+  { href: "/shop", key: "nav.shop", Icon: IconStore },
 ] as const satisfies readonly { href: string; key: MessageKey; Icon: unknown }[];
+const PHONE_TABS = [TABS[0], TABS[1], TABS[2], TABS[4]];
 
-function isActive(href: string, path: string) {
+const SHOP_PAGES = ["/shop", "/team", "/website", "/report"];
+function isActive(href: string, path: string, phone = false) {
+  const under = (x: string) => path === x || path.startsWith(x + "/");
   if (href === "/") return path === "/" || path.startsWith("/p/");
-  if (href === "/shares") return ["/shares", "/share", "/clients"].some((x) => path === x || path.startsWith(x + "/"));
-  return path.startsWith(href);
+  if (href === "/shares") return ["/shares", "/share", "/clients"].some(under);
+  if (href === "/shop") return SHOP_PAGES.some(under) || (phone && under("/rates"));
+  return under(href);
 }
 
 /** Header links for wider screens. */
@@ -58,7 +65,7 @@ export function BottomNav() {
   const path = usePathname();
   if (HIDE_ON.some((re) => re.test(path))) return null;
   const item = (tab: (typeof TABS)[number]) => {
-    const active = isActive(tab.href, path);
+    const active = isActive(tab.href, path, true);
     return (
       <li key={tab.href} className="flex-1">
         <Link
@@ -78,8 +85,8 @@ export function BottomNav() {
       className="bottom-nav fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
     >
       <ul className="mx-auto flex max-w-lg items-center px-1">
-        {item(TABS[0])}
-        {item(TABS[1])}
+        {item(PHONE_TABS[0])}
+        {item(PHONE_TABS[1])}
         <li className="flex flex-1 justify-center">
           <Link
             href="/add"
@@ -89,8 +96,8 @@ export function BottomNav() {
             <span className="sr-only">{t("home.addPiece")}</span>
           </Link>
         </li>
-        {item(TABS[2])}
-        {item(TABS[3])}
+        {item(PHONE_TABS[2])}
+        {item(PHONE_TABS[3])}
       </ul>
     </nav>
   );

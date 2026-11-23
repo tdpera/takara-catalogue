@@ -141,6 +141,27 @@ export const IconGlobe = (p: P) => (
     <path d="M3.5 12h17M12 3.5c2.4 2.4 3.6 5.2 3.6 8.5s-1.2 6.1-3.6 8.5c-2.4-2.4-3.6-5.2-3.6-8.5S9.6 5.9 12 3.5z" />
   </Svg>
 );
+/** A jeweller's tray: the customer's chosen pieces. */
+export const IconTray = (p: P) => (
+  <Svg {...p}>
+    <path d="M3 14h18l-1.5 5h-15z" />
+    <path d="M6 14V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6" />
+    <path d="M9 10h6" />
+  </Svg>
+);
+export const IconStore = (p: P) => (
+  <Svg {...p}>
+    <path d="M4 9.5 5.5 4h13L20 9.5" />
+    <path d="M4 9.5c0 1.4 1.1 2.5 2.7 2.5S9.3 10.9 9.3 9.5c0 1.4 1.2 2.5 2.7 2.5s2.7-1.1 2.7-2.5c0 1.4 1.1 2.5 2.6 2.5S20 10.9 20 9.5" />
+    <path d="M5.5 12v8h13v-8M10 20v-4.5h4V20" />
+  </Svg>
+);
+export const IconChart = (p: P) => (
+  <Svg {...p}>
+    <path d="M4 20V4M4 20h16" />
+    <path d="M8 16v-4M12 16V8M16 16v-6" />
+  </Svg>
+);
 export const IconChevron = (p: P) => (
   <Svg {...p} className={`rtl:-scale-x-100 ${p.className ?? ""}`}>
     <path d="m9 6 6 6-6 6" />

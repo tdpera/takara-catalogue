@@ -557,3 +557,56 @@ molten gold, then the stone flashing.
 - The name, tagline and city stay real text over the film (crisp, and in the user's language);
   the exit still flies through the ring, with the film scaled by the same --fly value that opens
   the hole onto the app.
+
+## 25. Shop websites, trays, sold attribution, reports and the Takara dashboard
+The business model is B2B: shops pay a setup fee for their own website and a monthly plan for
+the app. A consolidated marketplace can come later, built from shops' websites. The souq sells
+from trays: staff bring out a few, customers sift through them, then compare shops. So:
+- **The website is a shop window, not a shop.** No buying, paying, reserving or customer forms.
+  It's a customer-facing, read-only copy of the catalogue (collection with category, karat and
+  weight filters; piece pages with the spin; a visit page), in the 4 languages, at
+  `<slug>.<NEXT_PUBLIC_SITE_DOMAIN>` (middleware rewrites the host to `/site/<slug>`) and always
+  at `<app>/site/<slug>`, which works before any domain is bought. No Takara launch film, service
+  worker or app chrome on a shop's site; the shop's name and logo lead, Takara is a small credit.
+- **The tray** is the bridge to the shop and the answer to "how do we show they came through
+  us?". Customers add pieces (a cookie per site: piece ids only, no account, nothing personal),
+  then either **send it on WhatsApp** (wa.me with the pieces and codes written out; they press
+  send, so the app still never messages anyone) or **show it in the shop** (a 6-character code
+  with no look-alike letters, and a QR that opens the tray in the staff app). Both save the
+  tray, so the shop sees it under **Trays**; the same customer sending the same tray again keeps
+  its code. Opening a tray (code, QR or the link in the WhatsApp message) records the visit.
+- **Prices** come only from the pricing engine, through one rule set (`src/lib/public-price.ts`)
+  shared with share links: each shop picks **live** (today's price), **from** (the gold value
+  with VAT only: the real price is never lower and making charges stay private) or **ask** (no
+  prices). Rates set today show plainly, 1-3 days old are "indicative", older are hidden ("Ask
+  for today's price"). Sold and reserved pieces show their status, never a price. This also
+  brings share links in line with §3, which until now showed reserved pieces' prices and didn't
+  label old rates.
+- **Making charges never reach the browser.** The website's database functions return them
+  (the server needs them to price), so only the service role may call those functions;
+  `src/lib/site-data.ts` turns rows into what a page may show and drops them. Images go through
+  `/site-img/<slug>/<path>`, which serves a file only if it belongs to a piece the site shows
+  (or the logo), with CDN caching (paths never change), instead of signed URLs that change on
+  every load. Pages render per request, so prices are always current.
+- **Sold attribution:** marking a piece sold records today's price and asks "How did they find
+  it?" (walk-in, website, tray, WhatsApp link, returning client); selling from a tray fills it
+  in, and a recent tray or opened share link is marked "likely". Un-selling clears it.
+- **Monthly report** (owners): website visitors, trays (WhatsApp / in the shop / opened by
+  staff), share links, sales by how they were found, most-viewed pieces, catalogue upkeep, each
+  against last month. **Takara dashboard** (`/admin`, `platform_admins` only, added by SQL):
+  totals and 12-month trends across shops, a sortable shops table with "needs attention" flags
+  (rates not updated for 3+ days, quiet for 7+, no website) and estimated AI cost (list prices,
+  `src/lib/ai-cost.ts`), and each shop's report and activity feed in plain words. Counts and
+  piece names only: never client names or numbers, and the owner's own contact as Takara's
+  customer.
+- **Visits** are counted like share-link views (a script once the page is visible, robots
+  filtered, a hashed visitor id, repeats within 30 minutes once), and staff browsing their own
+  site aren't counted.
+- **Navigation:** phones get Catalogue, Shares, Add, Trays, Shop; gold rates, website, report
+  and team live under Shop (today's rates are still on every screen, and the stale-rates banner
+  still links to them).
+- **The 360° spin stays optional.** The dashboard shows how many pieces have one per shop; if
+  shops rarely record spins, hide the button behind a setting.
+- **Not done yet** (next phases in the plan): studio photo clean-up, detailed gold attributes
+  (chain style, hollow/solid, finish), bulk import, plans and billing, own domains per shop
+  through the Vercel API, gold-rate suggestions, the KYC module and the cross-shop directory.

@@ -3,7 +3,7 @@
 //
 //   pnpm db:start            once (local Supabase in Docker)
 //   pnpm e2e --yes           build, start the app on :3000, run every suite
-//   pnpm e2e --yes share     run one suite (capture, ai, catalogue, share)
+//   pnpm e2e --yes share     run one suite (capture, ai, catalogue, share, site)
 //   pnpm e2e --yes --no-build
 //
 // WARNING: resets the LOCAL database before each suite (that's what --yes confirms).
@@ -16,7 +16,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const tmp = join(here, ".tmp");
 const args = process.argv.slice(2);
-const ALL = ["capture", "ai", "catalogue", "share"];
+const ALL = ["capture", "ai", "catalogue", "share", "site"];
 const suites = args.filter((a) => ALL.includes(a));
 
 if (!args.includes("--yes")) {

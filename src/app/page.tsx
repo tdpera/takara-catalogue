@@ -11,10 +11,13 @@ import { EmptyState } from "@/components/EmptyState";
 import { IconPlus } from "@/components/icons";
 
 export default async function CataloguePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const { memberships, current } = await requireShop();
+  const { supabase, memberships, current, isAdmin } = await requireShop();
   const { t } = await getT();
   const f = parseFilters(await searchParams);
-  const { cards, total } = await listCards(current.shop_id, f);
+  const [{ cards, total }, { data: site }] = await Promise.all([
+    listCards(current.shop_id, f),
+    supabase.from("shop_sites").select("shop_id").eq("shop_id", current.shop_id).maybeSingle(),
+  ]);
   const filtered = hasFilters(f);
 
   return (
@@ -44,7 +47,7 @@ export default async function CataloguePage({ searchParams }: { searchParams: Pr
             />
           )
         ) : (
-          <Grid shopId={current.shop_id} cards={cards} />
+          <Grid shopId={current.shop_id} cards={cards} isAdmin={isAdmin} hasSite={!!site} />
         )}
 
         {cards.length < total && (

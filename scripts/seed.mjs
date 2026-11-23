@@ -4,6 +4,9 @@
 //   pnpm seed                          local Supabase; owner 050 000 0001, salesperson 050 000 0002
 //   pnpm seed --owner +971501234567    make that phone number the demo shop's owner
 //   pnpm seed --remote                 required when the Supabase URL isn't local
+//   pnpm seed --admin +971501234567    also make that number a Takara admin (the /admin dashboard)
+// Locally the demo owner is a Takara admin too, and a second, quieter shop is added so the
+// dashboard has more than one shop to compare.
 //
 // Running it again replaces the previous demo shop (same name and owner) and its files.
 // Pictures are drawn illustrations marked "DEMO" (see demo-art.mjs), never fake stock photos.
@@ -203,12 +206,64 @@ async function upload(path, bytes) {
 const ownerId = await userFor(OWNER_PHONE);
 const salesId = SALES_PHONE ? await userFor(SALES_PHONE) : null;
 
-// Replace an earlier demo shop owned by the same person.
-const old = must(await db.from("shops").select("id").eq("name", SHOP_NAME).eq("created_by", ownerId), "find old demo shop");
-for (const s of old) {
-  await removeShopFiles(s.id);
-  must(await db.from("shops").delete().eq("id", s.id), "remove old demo shop");
+async function removeOldShop(name, owner) {
+  const old = must(await db.from("shops").select("id").eq("name", name).eq("created_by", owner), "find old demo shop");
+  for (const s of old) {
+    await removeShopFiles(s.id);
+    must(await db.from("shops").delete().eq("id", s.id), "remove old demo shop");
+  }
 }
+
+/** Adds pieces with drawn pictures; returns their ids in order. `ageH` is how long ago the first was added. */
+async function addPieces(shopId, list, { owner, sales = null, ageH = 31 }) {
+  const out = [];
+  for (const [i, p] of list.entries()) {
+    const id = randomUUID();
+    // Spread "added" times out, newest last in the list (so newest first in the catalogue).
+    const createdAt = new Date(Date.now() - (list.length - i) * ageH * 3600 * 1000).toISOString();
+    const by = i % 3 === 2 && sales ? sales : owner;
+    must(
+      await db.from("pieces").insert({
+        id, shop_id: shopId, name: p.name, category: p.category, karat: p.karat, gross_g: p.gross_g, stone_g: p.stone_g ?? "0",
+        making_per_g: p.making_per_g, making_flat: p.making_flat ?? null, extras_aed: p.extras_aed ?? "0",
+        descriptions: p.d, status: p.status ?? "in_stock", created_by: by, created_at: createdAt,
+      }),
+      `add ${p.name}`,
+    );
+    const dir = `${shopId}/${id}`;
+    const photoId = randomUUID();
+    const photo = photoPng(p.art, 1000);
+    await upload(`${dir}/photo-${photoId}.png`, photo);
+    await upload(`${dir}/photo-${photoId}-thumb.png`, photoPng(p.art, 480));
+    const media = [{ id: photoId, piece_id: id, shop_id: shopId, type: "photo", storage_path: `${dir}/photo-${photoId}.png`, thumb_path: `${dir}/photo-${photoId}-thumb.png`, bytes: photo.length, sort_order: 0, created_by: by, created_at: createdAt }];
+    if (p.spin) {
+      const spinId = randomUUID();
+      const sprite = spritePng(p.art, 360);
+      await upload(`${dir}/spin-${spinId}.png`, sprite);
+      await upload(`${dir}/spin-${spinId}-small.png`, spritePng(p.art, 120));
+      media.push({ id: spinId, piece_id: id, shop_id: shopId, type: "spin_sprite", storage_path: `${dir}/spin-${spinId}.png`, thumb_path: `${dir}/spin-${spinId}-small.png`, bytes: sprite.length, frames: 24, cols: 6, cell_px: 360, sort_order: 1, created_by: by, created_at: createdAt });
+    }
+    must(await db.from("piece_media").insert(media), `add pictures for ${p.name}`);
+    must(await db.from("events").insert({ shop_id: shopId, user_id: by, name: "piece_added", props: { piece_id: id, has_spin: !!p.spin }, created_at: createdAt }), "log piece");
+    out.push(id);
+    process.stdout.write(`  ${String(i + 1).padStart(2)}. ${p.karat}K ${p.name}${p.spin ? " (with 360° spin)" : ""}\n`);
+  }
+  return out;
+}
+
+/** Same maths as src/lib/pricing.ts, for the demo sale's recorded value. */
+function demoPrice(p, vat = true) {
+  const net = Number(p.gross_g) - Number(p.stone_g ?? 0);
+  const making = p.making_flat != null ? Number(p.making_flat) : net * Number(p.making_per_g);
+  const base = net * Number(RATES[p.karat]) + making + Number(p.extras_aed ?? 0);
+  return Math.round(base * (vat ? 1.05 : 1));
+}
+
+const TRAY_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const trayCode = () => Array.from({ length: 6 }, () => TRAY_ALPHABET[Math.floor(Math.random() * TRAY_ALPHABET.length)]).join("");
+const ago = (h) => new Date(Date.now() - h * 3600 * 1000).toISOString();
+
+await removeOldShop(SHOP_NAME, ownerId);
 
 const shop = must(
   await db.from("shops").insert({ name: SHOP_NAME, sku_prefix: "ANJ", default_making_per_g: 18, vat_enabled: true, created_by: ownerId }).select("id").single(),
@@ -218,36 +273,7 @@ must(await db.from("shop_members").insert({ shop_id: shop.id, user_id: ownerId, 
 if (salesId) must(await db.from("shop_members").insert({ shop_id: shop.id, user_id: salesId, role: "salesperson" }), "add salesperson");
 must(await db.from("gold_rates").insert(Object.entries(RATES).map(([karat, aed]) => ({ shop_id: shop.id, karat: Number(karat), aed_per_g: aed, set_by: ownerId }))), "set rates");
 
-const ids = [];
-for (const [i, p] of PIECES.entries()) {
-  const id = randomUUID();
-  ids.push(id);
-  // Spread "added" times over the last two weeks, newest first in the catalogue.
-  const createdAt = new Date(Date.now() - (PIECES.length - i) * 31 * 3600 * 1000).toISOString();
-  must(
-    await db.from("pieces").insert({
-      id, shop_id: shop.id, name: p.name, category: p.category, karat: p.karat, gross_g: p.gross_g, stone_g: p.stone_g ?? "0",
-      making_per_g: p.making_per_g, making_flat: p.making_flat ?? null, extras_aed: p.extras_aed ?? "0",
-      descriptions: p.d, status: p.status ?? "in_stock", created_by: i % 3 === 2 && salesId ? salesId : ownerId, created_at: createdAt,
-    }),
-    `add ${p.name}`,
-  );
-  const dir = `${shop.id}/${id}`;
-  const photoId = randomUUID();
-  const photo = photoPng(p.art, 1000);
-  await upload(`${dir}/photo-${photoId}.png`, photo);
-  await upload(`${dir}/photo-${photoId}-thumb.png`, photoPng(p.art, 480));
-  const media = [{ id: photoId, piece_id: id, shop_id: shop.id, type: "photo", storage_path: `${dir}/photo-${photoId}.png`, thumb_path: `${dir}/photo-${photoId}-thumb.png`, bytes: photo.length, sort_order: 0, created_by: ownerId }];
-  if (p.spin) {
-    const spinId = randomUUID();
-    const sprite = spritePng(p.art, 360);
-    await upload(`${dir}/spin-${spinId}.png`, sprite);
-    await upload(`${dir}/spin-${spinId}-small.png`, spritePng(p.art, 120));
-    media.push({ id: spinId, piece_id: id, shop_id: shop.id, type: "spin_sprite", storage_path: `${dir}/spin-${spinId}.png`, thumb_path: `${dir}/spin-${spinId}-small.png`, bytes: sprite.length, frames: 24, cols: 6, cell_px: 360, sort_order: 1, created_by: ownerId });
-  }
-  must(await db.from("piece_media").insert(media), `add pictures for ${p.name}`);
-  process.stdout.write(`  ${String(i + 1).padStart(2)}. ${p.karat}K ${p.name}${p.spin ? " (with 360° spin)" : ""}\n`);
-}
+const ids = await addPieces(shop.id, PIECES, { owner: ownerId, sales: salesId });
 
 // A client and a live share link for the owner, so the sharing screens have something to show.
 const client = must(
@@ -259,7 +285,85 @@ const share = must(
   "create share",
 );
 
-console.log(`\nDemo shop "${SHOP_NAME}" is ready: ${PIECES.length} pieces, today's rates (24K AED ${RATES[24]}), 1 client, 1 share link.`);
+// The demo website ("mock" site for pitching): <slug>.<domain>, or /site/<slug> before a domain is set up.
+const takenDemo = must(await db.from("shop_sites").select("shop_id").eq("slug", "demo"), "check site address");
+const slug = takenDemo.length ? `demo-${randomUUID().slice(0, 4)}` : "demo";
+must(
+  await db.from("shop_sites").insert({
+    shop_id: shop.id, slug, published: true, price_mode: "live", whatsapp: OWNER_PHONE,
+    address: "Shop 14, Gold Souq, Deira, Dubai", maps_url: "https://maps.google.com/?q=Gold+Souq+Deira+Dubai",
+    hours: "Sat–Thu 10:00–22:00 · Fri 16:00–22:00",
+    about: {
+      en: "A family jeweller in the Deira Gold Souq since 1998. Everyday gold, bridal sets and gifts in 18K to 24K, priced at today's gold rate.",
+      ar: "صائغ عائلي في سوق الذهب بديرة منذ عام 1998. ذهب للاستخدام اليومي وأطقم للعرائس وهدايا من عيار 18 إلى 24، بسعر الذهب اليوم.",
+      hi: "1998 से देरा गोल्ड सूक़ में एक पारिवारिक जौहरी। रोज़ पहनने का सोना, दुल्हन के सेट और तोहफ़े, 18 से 24 कैरेट में, आज के सोने के भाव पर।",
+      ml: "1998 മുതൽ ദേര ഗോൾഡ് സൂക്കിലെ ഒരു കുടുംബ ജ്വല്ലറി. ദിവസേന അണിയാനുള്ള സ്വർണ്ണം, വധുവിനുള്ള സെറ്റുകൾ, സമ്മാനങ്ങൾ, 18 മുതൽ 24 കാരറ്റ് വരെ, ഇന്നത്തെ സ്വർണ്ണ നിരക്കിൽ.",
+    },
+  }),
+  "publish demo website",
+);
+
+// Some website life for the monthly report and the Takara dashboard: visits over the last six
+// weeks, three trays (one opened in the shop and turned into the sale of the signet ring).
+const views = [];
+for (let d = 0; d < 42; d++) {
+  const n = 1 + ((d * 7) % 5);
+  for (let v = 0; v < n; v++) {
+    const visitor = `seed-${d}-${v}`;
+    const at = ago(d * 24 + v * 2 + 1);
+    views.push({ shop_id: shop.id, piece_id: null, visitor_hash: visitor, viewed_at: at });
+    views.push({ shop_id: shop.id, piece_id: ids[(d + v) % 9], visitor_hash: visitor, viewed_at: at });
+  }
+}
+must(await db.from("site_views").insert(views), "add website visits");
+
+const signet = PIECES.findIndex((p) => p.art === "signet");
+const trays = [
+  { code: trayCode(), piece_ids: [ids[signet], ids[2], ids[0]], channel: "whatsapp", created_at: ago(76), opened_at: ago(52) },
+  { code: trayCode(), piece_ids: [ids[6], ids[4]], channel: "in_store", created_at: ago(26), opened_at: null },
+  { code: trayCode(), piece_ids: [ids[1]], channel: "whatsapp", created_at: ago(3), opened_at: null },
+];
+for (const t of trays) {
+  const row = must(await db.from("site_trays").insert({ shop_id: shop.id, ...t, opened_by: t.opened_at ? ownerId : null }).select("id").single(), "add tray");
+  t.id = row.id;
+  must(await db.from("events").insert({ shop_id: shop.id, user_id: null, name: "tray_created", props: { tray_id: row.id, channel: t.channel, pieces: t.piece_ids.length }, created_at: t.created_at }), "log tray");
+  if (t.opened_at) must(await db.from("events").insert({ shop_id: shop.id, user_id: ownerId, name: "tray_opened", props: { tray_id: row.id }, created_at: t.opened_at }), "log tray");
+}
+must(
+  await db.from("pieces").update({ sold_via: "tray", sold_at: ago(50), sold_value_aed: demoPrice(PIECES[signet]) }).eq("id", ids[signet]),
+  "record the demo sale",
+);
+must(await db.from("events").insert({ shop_id: shop.id, user_id: ownerId, name: "piece_sold", props: { piece_id: ids[signet], tray_id: trays[0].id }, created_at: ago(50) }), "log sale");
+
+// Takara admins: the demo owner when local, and anyone given with --admin.
+const ADMIN_PHONE = arg("--admin");
+if (ADMIN_PHONE && !E164.test(ADMIN_PHONE)) {
+  console.error(`${ADMIN_PHONE} isn't a phone number in international format, e.g. +971501234567.`);
+  process.exit(1);
+}
+const admins = [...new Set([local ? ownerId : null, ADMIN_PHONE ? await userFor(ADMIN_PHONE) : null].filter(Boolean))];
+if (admins.length) must(await db.from("platform_admins").upsert(admins.map((user_id) => ({ user_id }))), "add Takara admins");
+
+// Locally, a second, quieter shop so the dashboard has something to compare: no website yet,
+// rates not updated for 9 days, nothing added for almost two weeks.
+const SECOND_NAME = "Gold Line Jewellery (demo)";
+if (local) {
+  const secondOwner = await userFor("+971500000003");
+  await removeOldShop(SECOND_NAME, secondOwner);
+  const second = must(
+    await db.from("shops").insert({ name: SECOND_NAME, sku_prefix: "GLJ", default_making_per_g: 15, vat_enabled: true, created_by: secondOwner }).select("id").single(),
+    "create second shop",
+  );
+  must(await db.from("shop_members").insert({ shop_id: second.id, user_id: secondOwner, role: "owner" }), "add second owner");
+  must(await db.from("gold_rates").insert(Object.entries(RATES).map(([karat, aed]) => ({ shop_id: second.id, karat: Number(karat), aed_per_g: aed, set_by: secondOwner, set_at: ago(9 * 24) }))), "set second rates");
+  console.log(`\nSecond demo shop "${SECOND_NAME}":`);
+  await addPieces(second.id, PIECES.filter((p) => ["chain", "baby-bangle", "bracelet", "pendant"].includes(p.art)).map((p) => ({ ...p, spin: false, status: undefined })), { owner: secondOwner, ageH: 80 });
+}
+
+console.log(`\nDemo shop "${SHOP_NAME}" is ready: ${PIECES.length} pieces, today's rates (24K AED ${RATES[24]}), 1 client, 1 share link, a website and 3 trays.`);
 console.log(`Owner:       ${OWNER_PHONE}${local && OWNER_PHONE === "+971500000001" ? "  (sign in with 050 000 0001, code 123456)" : ""}`);
 if (SALES_PHONE) console.log(`Salesperson: ${SALES_PHONE}${local && SALES_PHONE === "+971500000002" ? "  (050 000 0002, code 123456)" : ""}`);
 console.log(`Share link:  ${SITE}/s/${share.public_token}`);
+console.log(`Website:     ${SITE}/site/${slug}${local ? `  (or http://${slug}.localhost:3000)` : ""}`);
+console.log(`Trays:       ${trays.map((t) => t.code).join(", ")}`);
+if (admins.length) console.log(`Takara dashboard: ${SITE}/admin`);

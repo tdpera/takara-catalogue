@@ -20,6 +20,14 @@ are saved on the phone first and upload in the background.
 - **Catalogue:** grid with spins, filters, search, a piece page with a price breakdown, editing.
 - **Sharing:** private links with live prices and view tracking, a 1080 px catalogue image, and a
   WhatsApp button. Nothing is sent automatically.
+- **Shop websites:** each shop can publish its catalogue as a website for customers
+  (`<shop>.<your domain>`, or `/site/<shop>` before a domain is set up), in 4 languages, with
+  prices shown live, as "from" (gold value only) or not at all. Nothing is sold online: customers
+  collect pieces in a **tray** and send it to the shop on WhatsApp or show its code (and QR) in
+  the shop; staff open it in the **Trays** tab.
+- **Sales and reports:** marking a piece sold asks how the customer found it (walk-in, website,
+  tray, WhatsApp link, returning client). Owners get a **monthly report**; Takara's own team gets
+  a **dashboard** of every shop (`/admin`). See DECISIONS.md 25.
 - **Design:** "Maison" (Bodoni Moda and Manrope on ivory, black velvet and gold). Signed-out
   visitors get an introduction page with a live 3D gold ring (WebGL, no library) and the app's
   story told as you scroll; photos fly between pages, prices roll into place. All motion is CSS
@@ -120,8 +128,9 @@ To try AI fill locally, add `ANTHROPIC_API_KEY` to `.env.local` and restart `pnp
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser and server | Yes |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser and server. Public by design: row level security decides what each user can do. | Yes |
-| `NEXT_PUBLIC_SITE_URL` | The app's address, used in share links, e.g. `https://catalogue.example.com` | Yes in production |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Server only.** Signs images for the public share page; used by `pnpm seed`. Never expose it. | Yes, for share links |
+| `NEXT_PUBLIC_SITE_URL` | The app's address, used in share links and tray QR codes, e.g. `https://app.takara.ae` | Yes in production |
+| `NEXT_PUBLIC_SITE_DOMAIN` | The domain shop websites live under, e.g. `takara.ae` gives `alnoor.takara.ae`. Leave unset until the domain is set up: websites then live at `<app>/site/<shop>`. | No |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server only.** Signs images for the public share page, reads shop websites (their database functions return making charges, so only the server may call them); used by `pnpm seed`. Never expose it. | Yes, for share links and websites |
 | `ANTHROPIC_API_KEY` | **Server only.** AI fill and "Write with AI". Without it, those buttons say AI isn't set up. | No |
 | `ANTHROPIC_MODEL` | Claude model. Default `claude-opus-5-5`. | No |
 | `ANTHROPIC_EFFORT` | `low` (default), `medium`, `high`… Higher is slower and costs more. | No |
@@ -206,8 +215,32 @@ The SMS/WhatsApp provider for sign-in codes (Twilio) is configured in Supabase, 
 ### Updating
 
 New migrations in `supabase/migrations` are applied with `pnpm exec supabase db push`, before
-deploying the code that needs them. When you change `public/sw.js` in a way that should drop old
+deploying the code that needs them. Without the CLI: open each new migration file, paste it into
+the dashboard's **SQL Editor** and run it, oldest first (each file runs once). When you change `public/sw.js` in a way that should drop old
 caches, bump its `VERSION`.
+
+### Shop websites, trays and the Takara dashboard
+
+1. **Database:** apply `supabase/migrations/20261124000100_websites_trays_reports.sql` (see
+   Updating), then deploy the code.
+2. **Make yourself a Takara admin** (for `/admin`). In the SQL Editor, with your number in
+   international format without the `+`:
+
+   ```sql
+   insert into public.platform_admins (user_id)
+   select id from auth.users where phone = '9715XXXXXXXX';
+   ```
+
+3. **A shop's website:** in the app, Shop → Website: choose the address, prices and WhatsApp
+   number, tick "Website is live", save. It's at `<app>/site/<address>` straight away.
+4. **Your own domain for shop websites** (optional, e.g. `takara.ae`): Vercel → Project →
+   Settings → Domains: add `app.takara.ae` for the app and the wildcard `*.takara.ae` for shops
+   (Vercel asks you to use its nameservers for wildcards). Then set `NEXT_PUBLIC_SITE_URL` to
+   `https://app.takara.ae` and `NEXT_PUBLIC_SITE_DOMAIN` to `takara.ae`, and redeploy. Locally,
+   `http://<address>.localhost:3000` works without any setup.
+5. **The demo ("mock") website** for pitching: `pnpm seed` publishes the demo shop at `demo`
+   (locally also with sample visits, trays and a sale, and a second quieter shop for the
+   dashboard). Replace its drawn "DEMO" pictures with real photos before showing it to shops.
 
 ---
 
@@ -215,7 +248,8 @@ caches, bump its `VERSION`.
 
 ```
 src/app/            pages and server actions (/, /add, /p/[id], /share, /shares, /clients,
-                    /rates, /team, /login, /s/[token] public share page, /api/ai/fill)
+                    /trays, /rates, /shop, /website, /report, /team, /login, /admin,
+                    /s/[token] public share page, /site/[slug] shop websites, /api/ai/fill)
 src/components/     shared UI (spin viewer, price breakdown, header, filters, …)
 src/lib/            pricing, rates, formatting, AI (server-only Claude client + checks),
                     upload queue (IndexedDB), share messages and image, Supabase clients

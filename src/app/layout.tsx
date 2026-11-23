@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import "./globals.css";
 import { I18nProvider } from "@/i18n/client";
-import { dirFor } from "@/i18n";
+import { dirFor, isLocale } from "@/i18n";
 import { getLocale } from "@/i18n/server";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import { SPLASH_RUN, SPLASH_SCRIPT, Splash } from "@/components/Splash";
@@ -26,6 +27,26 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Shop websites (set by middleware): the shop's page, in the visitor's language, without
+  // Takara's launch film or the app's offline service worker.
+  const h = await headers();
+  const siteLang = h.get("x-site-slug") ? h.get("x-site-lang") : null;
+  if (siteLang !== null) {
+    const lang = isLocale(siteLang) ? siteLang : "en";
+    return (
+      <html lang={lang} dir={dirFor(lang)} className={`${display.variable} ${sans.variable}`}>
+        <body className="min-h-dvh antialiased">
+          <a
+            href="#main"
+            className="sr-only z-50 rounded-xl bg-ink px-4 py-3 font-semibold text-paper focus:not-sr-only focus:fixed focus:start-3 focus:top-3"
+          >
+            {makeT(lang)("common.skip")}
+          </a>
+          {children}
+        </body>
+      </html>
+    );
+  }
   const locale = await getLocale();
   const t = makeT(locale);
   return (

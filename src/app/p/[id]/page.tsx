@@ -13,6 +13,10 @@ import { BackLink } from "@/components/piece/BackLink";
 import { PieceMedia } from "@/components/piece/PieceMedia";
 import { DescriptionTabs } from "@/components/piece/DescriptionTabs";
 import { StatusControl } from "@/components/piece/StatusControl";
+import { WebsiteToggle } from "@/components/piece/WebsiteToggle";
+import { suggestSoldVia } from "@/lib/sold";
+import { siteAddress } from "@/lib/site-host";
+import { appOrigin } from "@/lib/site-origin";
 import { btn, btnPrimary, card } from "@/components/ui";
 import { IconShare } from "@/components/icons";
 
@@ -20,14 +24,20 @@ export const metadata: Metadata = { title: "Piece" };
 
 export default async function PiecePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { user, memberships, current } = await requireShop();
+  const { supabase, user, memberships, current } = await requireShop();
   const { t, locale } = await getT();
   const piece = await getPiece(id);
   if (!piece) notFound();
   const shopId = piece.shop_id;
   const role = memberships.find((m) => m.shop_id === shopId)?.role;
   const canEdit = piece.created_by === user.id || role === "owner" || role === "manager";
-  const { rates, vatEnabled } = await getShopPricing(shopId);
+  const isAdmin = role === "owner" || role === "manager";
+  const [{ rates, vatEnabled }, suggestion, { data: site }] = await Promise.all([
+    getShopPricing(shopId),
+    piece.status === "sold" || piece.status === "reserved" ? suggestSoldVia(supabase, piece.id) : Promise.resolve(null),
+    supabase.from("shop_sites").select("slug, published").eq("shop_id", shopId).maybeSingle<{ slug: string; published: boolean }>(),
+  ]);
+  const siteUrl = site?.published ? `${siteAddress(site.slug, await appOrigin())}/p/${piece.sku}` : null;
 
   return (
     <>
@@ -73,8 +83,14 @@ export default async function PiecePage({ params }: { params: Promise<{ id: stri
             </div>
 
             <section className={card}>
-              <StatusControl pieceId={piece.id} status={piece.status} />
+              <StatusControl pieceId={piece.id} status={piece.status} soldVia={piece.sold_via} suggestion={suggestion} />
             </section>
+
+            {site && (isAdmin || piece.on_website) && (
+              <section className={card}>
+                <WebsiteToggle pieceId={piece.id} on={piece.on_website} canChange={isAdmin} url={piece.on_website && piece.status !== "sold" ? siteUrl : null} />
+              </section>
+            )}
 
             <section aria-labelledby="desc-h" className={card}>
               <h2 id="desc-h" className="eyebrow mb-3">{t("piece.description")}</h2>

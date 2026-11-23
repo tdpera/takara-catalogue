@@ -10,6 +10,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { checkPiece, KARATS } from "@/lib/pricing";
 import { CATEGORIES } from "@/lib/ai/shared";
 import { STATUSES } from "@/lib/catalogue-filters";
+import { SOLD_VIA, soldValue } from "@/lib/sold";
 
 type Result = { ok: true } | { ok: false; error: "auth" | "not_allowed" | "invalid" | "failed"; detail?: string };
 
@@ -23,10 +24,23 @@ export async function setStatus(pieceId: string, status: string): Promise<Result
   if (!z.uuid().safeParse(pieceId).success || !(STATUSES as readonly string[]).includes(status)) return { ok: false, error: "invalid" };
   const s = await session();
   if (!s) return { ok: false, error: "auth" };
-  const { error } = await s.supabase.rpc("set_piece_status", { p_piece: pieceId, p_status: status });
+  // Selling records today's price too, for the monthly report.
+  const value = status === "sold" ? await soldValue(s.supabase, pieceId) : null;
+  const { error } = await s.supabase.rpc("set_piece_status", { p_piece: pieceId, p_status: status, p_sold_value: value });
   if (error) return { ok: false, error: error.code === "42501" ? "not_allowed" : "failed", detail: error.message };
   revalidatePath(`/p/${pieceId}`);
   revalidatePath("/");
+  return { ok: true };
+}
+
+/** "How did they find it?" for a sold piece (or null to clear it). */
+export async function setSoldVia(pieceId: string, via: string | null): Promise<Result> {
+  if (!z.uuid().safeParse(pieceId).success || (via !== null && !(SOLD_VIA as readonly string[]).includes(via))) return { ok: false, error: "invalid" };
+  const s = await session();
+  if (!s) return { ok: false, error: "auth" };
+  const { error } = await s.supabase.rpc("set_sold_via", { p_piece: pieceId, p_via: via });
+  if (error) return { ok: false, error: error.code === "42501" ? "not_allowed" : "failed", detail: error.message };
+  revalidatePath(`/p/${pieceId}`);
   return { ok: true };
 }
 

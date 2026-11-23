@@ -232,7 +232,7 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   check("salesperson sees no Edit on a colleague's piece", (await s.getByRole('link', { name: 'Edit' }).count()) === 0);
   await s.goto(pieceUrl + '/edit');
   check('and the edit page refuses', await visible(s.getByText('Only the person who added this piece')));
-  await s.goto(pieceUrl); await radio(s, 'Sold'); await s.getByText('Status updated.').waitFor();
+  await s.goto(pieceUrl); await radio(s, 'Sold'); await s.getByText('Saved. How did they find it?').waitFor();
   check('salesperson can change status', sql(`select status from pieces where id='${pieceUrl.split('/').pop()}'`) === 'sold');
   check('salesperson has no Delete', true);
   // Another shop can't open it.

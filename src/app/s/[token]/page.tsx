@@ -8,8 +8,9 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { mediaSigner } from "@/lib/supabase/admin";
-import { priceOf, toRateMap, type Karat, type Rate } from "@/lib/pricing";
-import { formatAED, formatDubaiDateTime, formatGrams } from "@/lib/format";
+import { toRateMap, type Karat, type Rate } from "@/lib/pricing";
+import { oldestShownRate, publicPrice } from "@/lib/public-price";
+import { formatDubaiDateTime, formatGrams } from "@/lib/format";
 import { priceNote } from "@/lib/share-message";
 import { dirFor, isLocale, LOCALE_NAMES, LOCALES, makeT, type Locale, type MessageKey } from "@/i18n";
 import { I18nProvider } from "@/i18n/client";
@@ -71,8 +72,10 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
   const rates = toRateMap(share.rates);
   const paths = share.pieces.flatMap((p) => [p.photo?.path, p.photo?.thumb, p.spin?.path].filter((x): x is string => !!x));
   const urls = await mediaSigner().sign(paths, 24 * 3600);
-  const rateTimes = share.rates.map((r) => r.set_at);
-  const oldest = rateTimes.sort()[0];
+  // Today's price, labelled indicative on 1-3 day old rates, hidden on older ones (DECISIONS §3).
+  const prices = share.pieces.map((p) => publicPrice(p, rates, share.vat_enabled, "live"));
+  const oldest = oldestShownRate(prices);
+  const indicative = prices.some((p) => p.kind === "price" && p.indicative);
 
   return (
     <I18nProvider locale={locale}>
@@ -110,11 +113,11 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
         <main id="main" className="mx-auto max-w-5xl space-y-8 px-4 pt-2 pb-10">
           <p className="mx-auto max-w-xl border-y border-line py-3 text-center text-sm text-muted">
             {priceNote(locale, share.vat_enabled)}
-            {oldest && <> {t("pub.rateAt", { time: formatDubaiDateTime(oldest, locale) })}</>}
+            {oldest && <> {t(indicative ? "pub.indicativeAt" : "pub.rateAt", { time: formatDubaiDateTime(oldest, locale) })}</>}
           </p>
           <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
             {share.pieces.map((p, i) => {
-              const pr = priceOf(p, rates, share.vat_enabled);
+              const pr = prices[i];
               const photo = p.photo ? urls.get(p.photo.path) : undefined;
               const poster = p.photo?.thumb ? urls.get(p.photo.thumb) ?? null : null;
               const spin = p.spin ? urls.get(p.spin.path) : undefined;
@@ -136,18 +139,22 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
                     <p className="text-[12px] font-medium tracking-[0.06em] text-muted">
                       <span dir="ltr" className="num font-medium">{p.karat}K · {formatGrams(p.gross_g)}</span> · {t(`categories.${p.category}` as MessageKey)}
                     </p>
-                    {p.status === "sold" ? (
+                    {pr.kind === "sold" ? (
                       <p className="pt-1 font-semibold text-muted">{t("pub.sold")}</p>
+                    ) : pr.kind === "reserved" ? (
+                      <p className="pt-1">
+                        <span className="caps rounded-[2px] bg-warn-soft px-2 py-1 text-[10px] font-semibold text-warn">{t("status.reserved")}</span>
+                      </p>
                     ) : (
                       <p className="flex flex-wrap items-baseline gap-2 pt-1">
-                        {pr.ok ? (
+                        {pr.kind === "price" ? (
                           <span dir="ltr" data-price className="num text-[1.2rem] leading-tight font-semibold">
-                            AED <Odometer value={formatAED(pr.price.totalWhole).replace(/^\D+/, "")} />
+                            AED <Odometer value={pr.text.replace(/^\D+/, "")} />
                           </span>
                         ) : (
-                          <span data-price className="font-semibold text-muted">{t("pub.priceInStore")}</span>
+                          <span data-price className="font-semibold text-muted">{t("pub.askToday")}</span>
                         )}
-                        {p.status === "reserved" && <span className="caps rounded-[2px] bg-warn-soft px-2 py-1 text-[10px] font-semibold text-warn">{t("status.reserved")}</span>}
+                        {pr.kind === "price" && pr.indicative && <span className="caps text-[10px] font-semibold text-warn">{t("pub.indicative")}</span>}
                       </p>
                     )}
                     {desc && (

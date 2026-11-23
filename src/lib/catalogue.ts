@@ -36,6 +36,8 @@ type PieceRow = {
   making_flat: number | null;
   extras_aed: number;
   status: Status;
+  on_website: boolean;
+  sold_via: "walk_in" | "website" | "tray" | "whatsapp_link" | "returning_client" | null;
   descriptions: Descriptions;
   created_by: string | null;
   created_at: string;
@@ -51,6 +53,7 @@ export type Card = {
   karat: Karat;
   gross_g: number;
   status: Status;
+  onWebsite: boolean;
   price: string | null;
   photo: string | null;
   spin: Spin | null;
@@ -73,7 +76,7 @@ export async function listCards(shopId: string, f: Filters): Promise<{ cards: Ca
   let query = supabase
     .from("pieces")
     .select(
-      "id, sku, name, category, karat, gross_g, stone_g, making_per_g, making_flat, extras_aed, status, piece_media(id, type, storage_path, thumb_path, frames, cols)",
+      "id, sku, name, category, karat, gross_g, stone_g, making_per_g, making_flat, extras_aed, status, on_website, piece_media(id, type, storage_path, thumb_path, frames, cols)",
       { count: "exact" },
     )
     .eq("shop_id", shopId);
@@ -106,6 +109,7 @@ export async function listCards(shopId: string, f: Filters): Promise<{ cards: Ca
       karat: p.karat,
       gross_g: p.gross_g,
       status: p.status,
+      onWebsite: p.on_website,
       price: pr.ok ? formatAED(pr.price.totalWhole) : null,
       photo: (photo?.thumb_path && urls.get(photo.thumb_path)) || null,
       spin: spin && spinSrc ? { src: spinSrc, frames: spin.frames!, cols: spin.cols! } : null,
@@ -128,7 +132,7 @@ export async function getPiece(id: string): Promise<PieceDetail | null> {
   const { data, error } = await supabase
     .from("pieces")
     .select(
-      "id, sku, name, category, karat, gross_g, stone_g, making_per_g, making_flat, extras_aed, status, descriptions, created_by, created_at, shop_id, piece_media(id, type, storage_path, thumb_path, frames, cols, bytes)",
+      "id, sku, name, category, karat, gross_g, stone_g, making_per_g, making_flat, extras_aed, status, on_website, sold_via, descriptions, created_by, created_at, shop_id, piece_media(id, type, storage_path, thumb_path, frames, cols, bytes)",
     )
     .eq("id", id)
     .maybeSingle<PieceRow & { shop_id: string }>();

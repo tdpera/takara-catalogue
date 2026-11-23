@@ -1,0 +1,761 @@
+-- Shop websites, trays, sold attribution, monthly reports and the Takara dashboard.
+--
+-- - Each shop can publish a website: a customer-facing, read-only copy of its catalogue.
+--   No buying, paying or reserving online; the website is a shop window.
+-- - Customers collect pieces in a tray and either send it to the shop on WhatsApp or show its
+--   code in the shop. Staff open the tray in the app.
+-- - When a piece is sold, staff can record how the customer found it (walk-in, website, tray...).
+-- - Owners see a monthly report; Takara's own admins see every shop in one dashboard.
+--
+-- Website reads go through functions only the server (service role) may call: they return
+-- making charges so the server can work out prices, and making charges must never be public.
+
+-- ---------------------------------------------------------------- shop websites
+
+create type public.price_mode as enum ('live', 'from', 'ask');
+
+create table public.shop_sites (
+  shop_id uuid primary key references public.shops (id) on delete cascade,
+  -- <slug>.<takara domain>. Lowercase letters, digits and hyphens, 3-40 characters.
+  slug text not null unique
+    check (slug ~ '^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$'
+           and slug not in ('app', 'www', 'admin', 'api', 'mail', 'static', 'assets', 'cdn', 'help', 'support',
+                            'status', 'blog', 'login', 'site', 'takara', 'dashboard', 'shop', 'shops', 'files')),
+  published boolean not null default false,
+  -- live: today's price; from: the gold value only ("From AED ..."); ask: no prices.
+  price_mode public.price_mode not null default 'live',
+  whatsapp text check (whatsapp is null or private.is_e164(whatsapp)),
+  address text check (address is null or char_length(address) <= 200),
+  maps_url text check (maps_url is null or (char_length(maps_url) <= 500 and maps_url ~ '^https://')),
+  hours text check (hours is null or char_length(hours) <= 200),
+  instagram text check (instagram is null or instagram ~ '^[A-Za-z0-9._]{1,30}$'),
+  -- A short introduction per language: {"en": "...", "ar": "..."}.
+  about jsonb not null default '{}'::jsonb
+    check (jsonb_typeof(about) = 'object' and pg_column_size(about) <= 8000),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create trigger shop_sites_touch before update on public.shop_sites
+  for each row execute function private.touch_updated_at();
+
+alter table public.shop_sites enable row level security;
+grant select, insert on public.shop_sites to authenticated;
+grant update (slug, published, price_mode, whatsapp, address, maps_url, hours, instagram, about)
+  on public.shop_sites to authenticated;
+create policy shop_sites_select on public.shop_sites for select to authenticated
+  using (private.is_member(shop_id));
+create policy shop_sites_insert on public.shop_sites for insert to authenticated
+  with check (private.is_admin(shop_id));
+create policy shop_sites_update on public.shop_sites for update to authenticated
+  using (private.is_admin(shop_id)) with check (private.is_admin(shop_id));
+
+-- ---------------------------------------------------------------- pieces: website and sales
+
+alter table public.pieces
+  add column on_website boolean not null default true,
+  add column sold_via text
+    check (sold_via in ('walk_in', 'website', 'tray', 'whatsapp_link', 'returning_client')),
+  add column sold_at timestamptz,
+  -- The price when it was sold (today's price at that moment), for reports.
+  add column sold_value_aed numeric(14, 2) check (sold_value_aed is null or sold_value_aed >= 0);
+create index pieces_sold_idx on public.pieces (shop_id, sold_at) where status = 'sold';
+
+-- Selling stamps the time; un-selling clears how and when.
+create function private.pieces_sold_fields() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if new.status = 'sold' then
+    if tg_op = 'INSERT' or old.status is distinct from 'sold' or new.sold_at is null then
+      new.sold_at := coalesce(new.sold_at, now());
+    end if;
+  else
+    new.sold_at := null;
+    new.sold_via := null;
+    new.sold_value_aed := null;
+  end if;
+  return new;
+end $$;
+create trigger pieces_sold_fields before insert or update of status on public.pieces
+  for each row execute function private.pieces_sold_fields();
+
+-- ---------------------------------------------------------------- events
+
+alter table public.events drop constraint events_name_check;
+alter table public.events add constraint events_name_check
+  check (name in ('piece_added', 'ai_fill_used', 'share_created', 'share_viewed',
+                  'piece_sold', 'tray_created', 'tray_opened'));
+-- The app may log only its own three; the rest are recorded by database functions.
+drop policy events_insert on public.events;
+create policy events_insert on public.events for insert to authenticated
+  with check (private.is_member(shop_id) and user_id = (select auth.uid())
+              and name in ('piece_added', 'ai_fill_used', 'share_created'));
+
+-- Any member can mark a piece in stock, reserved or sold. Selling can say how the customer
+-- found it and what it sold for (today's price, worked out by the server).
+drop function public.set_piece_status(uuid, public.piece_status);
+create function public.set_piece_status(
+  p_piece uuid,
+  p_status public.piece_status,
+  p_sold_via text default null,
+  p_sold_value numeric default null,
+  p_tray uuid default null
+) returns void language plpgsql security definer set search_path = '' as $$
+declare
+  v_shop uuid;
+  v_before public.piece_status;
+begin
+  select shop_id, status into v_shop, v_before from public.pieces where id = p_piece;
+  if v_shop is null or not private.is_member(v_shop) then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  if p_tray is not null and not exists (
+    select 1 from public.site_trays t where t.id = p_tray and t.shop_id = v_shop and p_piece = any (t.piece_ids)
+  ) then
+    raise exception 'tray does not hold this piece' using errcode = '22023';
+  end if;
+  if p_status = 'sold' then
+    update public.pieces
+       set status = 'sold',
+           sold_via = coalesce(p_sold_via, case when p_tray is not null then 'tray' end, sold_via),
+           sold_value_aed = coalesce(round(p_sold_value, 2), sold_value_aed)
+     where id = p_piece;
+    if v_before is distinct from 'sold' then
+      insert into public.events (shop_id, user_id, name, props)
+      values (v_shop, (select auth.uid()), 'piece_sold',
+              jsonb_strip_nulls(jsonb_build_object('piece_id', p_piece, 'tray_id', p_tray)));
+    end if;
+  else
+    update public.pieces set status = p_status where id = p_piece;
+  end if;
+end $$;
+
+-- "How did they find it?", answered (or corrected) after marking sold.
+create function public.set_sold_via(p_piece uuid, p_via text) returns void
+language plpgsql security definer set search_path = '' as $$
+declare v_shop uuid;
+begin
+  select shop_id into v_shop from public.pieces where id = p_piece and status = 'sold';
+  if v_shop is null or not private.is_member(v_shop) then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  update public.pieces set sold_via = p_via where id = p_piece;
+end $$;
+
+-- Owners and managers choose which pieces appear on the website (one or many at once).
+create function public.set_on_website(p_shop uuid, p_pieces uuid[], p_on boolean) returns integer
+language plpgsql security definer set search_path = '' as $$
+declare v_n integer;
+begin
+  if not private.is_admin(p_shop) then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  if p_pieces is null or cardinality(p_pieces) > 500 then
+    raise exception 'too many pieces' using errcode = '22023';
+  end if;
+  update public.pieces set on_website = p_on where shop_id = p_shop and id = any (p_pieces);
+  get diagnostics v_n = row_count;
+  return v_n;
+end $$;
+
+-- ---------------------------------------------------------------- trays
+
+create table public.site_trays (
+  id uuid primary key default gen_random_uuid(),
+  shop_id uuid not null references public.shops (id) on delete cascade,
+  -- 6 characters with no look-alikes (no 0/O, 1/I/L).
+  code text not null check (code ~ '^[A-HJKMNP-Z2-9]{6}$'),
+  piece_ids uuid[] not null check (cardinality(piece_ids) between 1 and 24),
+  -- How the customer first used it: sent on WhatsApp, or shown in the shop.
+  channel text not null check (channel in ('whatsapp', 'in_store')),
+  visitor_hash text check (visitor_hash is null or char_length(visitor_hash) <= 128),
+  created_at timestamptz not null default now(),
+  opened_at timestamptz,
+  opened_by uuid references auth.users (id) on delete set null,
+  unique (shop_id, code)
+);
+create index site_trays_shop_created_idx on public.site_trays (shop_id, created_at desc);
+
+alter table public.site_trays enable row level security;
+grant select on public.site_trays to authenticated;
+create policy site_trays_select on public.site_trays for select to authenticated
+  using (private.is_member(shop_id));
+
+create function private.new_tray_code() returns text
+language sql volatile set search_path = '' as $$
+  select string_agg(substr('ABCDEFGHJKMNPQRSTUVWXYZ23456789', 1 + (get_byte(b.bytes, i) % 31), 1), '' order by i)
+  from (select extensions.gen_random_bytes(6) as bytes) b, generate_series(0, 5) as i
+$$;
+
+-- Staff open a tray by its code (typed, scanned or from a WhatsApp message). The first open is
+-- recorded, so the shop can see which trays turned into visits.
+create function public.open_tray(p_shop uuid, p_code text) returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_code text := upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'));
+  t public.site_trays%rowtype;
+begin
+  if not private.is_member(p_shop) then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  select * into t from public.site_trays where shop_id = p_shop and code = v_code;
+  if not found then
+    return null;
+  end if;
+  if t.opened_at is null then
+    update public.site_trays set opened_at = now(), opened_by = (select auth.uid()) where id = t.id;
+    insert into public.events (shop_id, user_id, name, props)
+    values (p_shop, (select auth.uid()), 'tray_opened', jsonb_build_object('tray_id', t.id));
+  end if;
+  return t.id;
+end $$;
+
+-- ---------------------------------------------------------------- website reads (server only)
+
+create table public.site_views (
+  id bigint generated always as identity primary key,
+  shop_id uuid not null references public.shops (id) on delete cascade,
+  piece_id uuid references public.pieces (id) on delete cascade,
+  visitor_hash text check (visitor_hash is null or char_length(visitor_hash) <= 128),
+  viewed_at timestamptz not null default now()
+);
+create index site_views_shop_time_idx on public.site_views (shop_id, viewed_at desc);
+create index site_views_piece_idx on public.site_views (piece_id, viewed_at desc) where piece_id is not null;
+alter table public.site_views enable row level security;
+
+-- Pieces a website shows: chosen for the website, and not sold more than 7 days ago.
+create function private.site_visible(p_shop uuid) returns setof public.pieces
+language sql stable security definer set search_path = '' as $$
+  select * from public.pieces p
+  where p.shop_id = p_shop and p.on_website
+    and (p.status <> 'sold' or p.sold_at > now() - interval '7 days')
+$$;
+
+create function private.site_shop(p_slug text) returns uuid
+language sql stable security definer set search_path = '' as $$
+  select shop_id from public.shop_sites where slug = lower(p_slug) and published
+$$;
+
+-- One piece as the server needs it to show it (making charges included, for working out the
+-- price; never sent to the browser).
+create function private.site_piece_json(p_piece uuid, p_full boolean) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'id', p.id, 'sku', p.sku, 'name', p.name, 'category', p.category, 'karat', p.karat,
+    'gross_g', p.gross_g, 'stone_g', p.stone_g, 'making_per_g', p.making_per_g,
+    'making_flat', p.making_flat, 'extras_aed', p.extras_aed, 'status', p.status,
+    'created_at', p.created_at, 'updated_at', p.updated_at,
+    'descriptions', case when p_full then p.descriptions end,
+    'photo', (select jsonb_build_object('path', m.storage_path, 'thumb', m.thumb_path)
+              from public.piece_media m where m.piece_id = p.id and m.type = 'photo'
+              order by m.created_at limit 1),
+    'spin', (select jsonb_build_object('path', m.storage_path, 'small', m.thumb_path, 'frames', m.frames, 'cols', m.cols)
+             from public.piece_media m
+             where m.piece_id = p.id and m.type = 'spin_sprite' and m.frames is not null and m.cols is not null
+             order by m.created_at limit 1))
+  from public.pieces p where p.id = p_piece
+$$;
+
+create function private.site_rates(p_shop uuid) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object('karat', r.karat, 'aed_per_g', r.aed_per_g, 'set_at', r.set_at)), '[]'::jsonb)
+  from public.current_gold_rates r where r.shop_id = p_shop
+$$;
+
+-- The website's shop details, today's rates and how many pieces each category has.
+create function public.get_site(p_slug text) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  s public.shop_sites%rowtype;
+  v_shop public.shops%rowtype;
+begin
+  select * into s from public.shop_sites where slug = lower(p_slug) and published;
+  if not found then
+    return null;
+  end if;
+  select * into v_shop from public.shops where id = s.shop_id;
+  return jsonb_build_object(
+    'shop_id', s.shop_id, 'slug', s.slug, 'name', v_shop.name, 'logo', v_shop.logo_path,
+    'price_mode', s.price_mode, 'vat_enabled', v_shop.vat_enabled,
+    'whatsapp', s.whatsapp, 'address', s.address, 'maps_url', s.maps_url, 'hours', s.hours,
+    'instagram', s.instagram, 'about', s.about, 'updated_at', s.updated_at,
+    'rates', private.site_rates(s.shop_id),
+    'categories', coalesce((
+      select jsonb_object_agg(c.category, c.n)
+      from (select p.category, count(*) as n from private.site_visible(s.shop_id) p
+            where p.status <> 'sold' group by p.category) c), '{}'::jsonb),
+    'total', (select count(*) from private.site_visible(s.shop_id) p where p.status <> 'sold'));
+end $$;
+
+-- One page of the website's catalogue, filtered and sorted. Sold pieces come last.
+create function public.list_site_pieces(
+  p_slug text,
+  p_category text default null,
+  p_karat integer default null,
+  p_wmin numeric default null,
+  p_wmax numeric default null,
+  p_q text default null,
+  p_sort text default 'newest',
+  p_limit integer default 24,
+  p_offset integer default 0
+) returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_shop uuid := private.site_shop(p_slug);
+  v_q text := nullif(btrim(coalesce(p_q, '')), '');
+  v_out jsonb;
+begin
+  if v_shop is null then
+    return null;
+  end if;
+  if v_q is not null then
+    v_q := '%' || replace(replace(replace(v_q, '\', '\\'), '%', '\%'), '_', '\_') || '%';
+  end if;
+  with f as (
+    select p.id, p.status, p.gross_g, p.created_at
+    from private.site_visible(v_shop) p
+    where (p_category is null or p.category::text = p_category)
+      and (p_karat is null or p.karat = p_karat)
+      and (p_wmin is null or p.gross_g >= p_wmin)
+      and (p_wmax is null or p.gross_g < p_wmax)
+      and (v_q is null or p.name ilike v_q or p.sku ilike v_q)
+  ), pg as (
+    select f.id, row_number() over (
+             order by (f.status = 'sold'),
+                      case when p_sort = 'weight_desc' then -f.gross_g when p_sort = 'weight_asc' then f.gross_g end nulls last,
+                      f.created_at desc, f.id desc) as ord
+    from f
+    order by ord
+    limit least(greatest(coalesce(p_limit, 24), 1), 480) offset greatest(coalesce(p_offset, 0), 0)
+  )
+  select jsonb_build_object(
+    'total', (select count(*) from f),
+    'pieces', coalesce((select jsonb_agg(private.site_piece_json(pg.id, false) order by pg.ord) from pg), '[]'::jsonb))
+  into v_out;
+  return v_out;
+end $$;
+
+-- One piece by its code, with a few others from the same category.
+create function public.get_site_piece(p_slug text, p_sku text) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_shop uuid := private.site_shop(p_slug);
+  v_piece public.pieces%rowtype;
+begin
+  if v_shop is null then
+    return null;
+  end if;
+  select * into v_piece from private.site_visible(v_shop) p where p.sku = p_sku;
+  if not found then
+    return null;
+  end if;
+  return private.site_piece_json(v_piece.id, true) || jsonb_build_object(
+    'related', coalesce((
+      select jsonb_agg(private.site_piece_json(r.id, false) order by r.created_at desc)
+      from (select p.id, p.created_at from private.site_visible(v_shop) p
+            where p.category = v_piece.category and p.id <> v_piece.id and p.status <> 'sold'
+            order by p.created_at desc limit 4) r), '[]'::jsonb));
+end $$;
+
+-- Pieces by id, in the order given (the visitor's tray before it becomes a code).
+create function public.site_pieces(p_slug text, p_ids uuid[]) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(private.site_piece_json(p.id, false) order by u.ord), '[]'::jsonb)
+  from unnest(p_ids[1:24]) with ordinality as u(pid, ord)
+  join private.site_visible(private.site_shop(p_slug)) p on p.id = u.pid
+$$;
+
+-- Every piece's code and last change, for the sitemap.
+create function public.site_sitemap(p_slug text) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object('sku', p.sku, 'updated_at', p.updated_at) order by p.created_at desc), '[]'::jsonb)
+  from (select * from private.site_visible(private.site_shop(p_slug)) p where p.status <> 'sold' limit 5000) p
+$$;
+
+-- Which bucket a website image may be read from: 'media' for photos and spins of pieces the
+-- website shows (or showed in the last 30 days, for trays), 'branding' for the shop's logo.
+create function public.site_media_bucket(p_slug text, p_path text) returns text
+language sql stable security definer set search_path = '' as $$
+  select case
+    when exists (
+      select 1 from public.piece_media m
+      join public.pieces p on p.id = m.piece_id
+      where m.shop_id = private.site_shop(p_slug) and p.on_website
+        and (p.status <> 'sold' or p.sold_at > now() - interval '30 days')
+        and m.type in ('photo', 'spin_sprite') and (m.storage_path = p_path or m.thumb_path = p_path))
+      then 'media'
+    when exists (
+      select 1 from public.shops s where s.id = private.site_shop(p_slug) and s.logo_path = p_path)
+      then 'branding'
+  end
+$$;
+
+-- A customer turns their tray into a code: to send on WhatsApp or show in the shop. Keeps their
+-- order, drops duplicates and pieces that are sold or hidden. The same customer sending the
+-- same tray again within 2 hours gets the same code. Returns null if nothing could be saved.
+create function public.create_tray(p_slug text, p_piece_ids uuid[], p_channel text, p_visitor text)
+returns text language plpgsql security definer set search_path = '' as $$
+declare
+  v_shop uuid := private.site_shop(p_slug);
+  v_ids uuid[];
+  v_code text;
+  v_id uuid;
+begin
+  if v_shop is null or p_channel not in ('whatsapp', 'in_store') or p_piece_ids is null
+     or cardinality(p_piece_ids) not between 1 and 24 or char_length(coalesce(p_visitor, '')) > 128 then
+    return null;
+  end if;
+  select array_agg(x.pid order by x.ord) into v_ids
+  from (
+    select distinct on (u.pid) u.pid, u.ord
+    from unnest(p_piece_ids) with ordinality as u(pid, ord)
+    join public.pieces p on p.id = u.pid and p.shop_id = v_shop and p.on_website and p.status <> 'sold'
+    order by u.pid, u.ord) x;
+  if v_ids is null then
+    return null;
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('tray:' || v_shop::text, 0));
+  if p_visitor is not null then
+    select t.code into v_code from public.site_trays t
+    where t.shop_id = v_shop and t.visitor_hash = p_visitor and t.created_at > now() - interval '2 hours'
+      and t.piece_ids @> v_ids and t.piece_ids <@ v_ids
+    order by t.created_at desc limit 1;
+    if v_code is not null then
+      return v_code;
+    end if;
+    if (select count(*) from public.site_trays t
+        where t.shop_id = v_shop and t.visitor_hash = p_visitor and t.created_at > now() - interval '1 hour') >= 20 then
+      return null;
+    end if;
+  end if;
+  if (select count(*) from public.site_trays t where t.shop_id = v_shop and t.created_at > now() - interval '1 hour') >= 500 then
+    return null;
+  end if;
+
+  for i in 1..8 loop
+    v_code := private.new_tray_code();
+    begin
+      insert into public.site_trays (shop_id, code, piece_ids, channel, visitor_hash)
+      values (v_shop, v_code, v_ids, p_channel, p_visitor)
+      returning id into v_id;
+      exit;
+    exception when unique_violation then
+      v_id := null;
+    end;
+  end loop;
+  if v_id is null then
+    return null;
+  end if;
+  insert into public.events (shop_id, user_id, name, props)
+  values (v_shop, null, 'tray_created', jsonb_build_object('tray_id', v_id, 'channel', p_channel, 'pieces', cardinality(v_ids)));
+  return v_code;
+end $$;
+
+-- A tray as the customer sees it (its public page), for 60 days.
+create function public.get_tray(p_slug text, p_code text) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_shop uuid := private.site_shop(p_slug);
+  t public.site_trays%rowtype;
+begin
+  if v_shop is null then
+    return null;
+  end if;
+  select * into t from public.site_trays
+  where shop_id = v_shop and code = upper(p_code) and created_at > now() - interval '60 days';
+  if not found then
+    return null;
+  end if;
+  return jsonb_build_object(
+    'code', t.code, 'created_at', t.created_at,
+    'pieces', coalesce((
+      select jsonb_agg(private.site_piece_json(p.id, false) order by u.ord)
+      from unnest(t.piece_ids) with ordinality as u(pid, ord)
+      join public.pieces p on p.id = u.pid and p.shop_id = v_shop and p.on_website), '[]'::jsonb));
+end $$;
+
+-- A website visit (p_sku null) or piece view, once the page is really shown in a browser.
+-- Skips the shop's own staff, the same visitor again within 30 minutes, and floods.
+create function public.record_site_view(p_slug text, p_sku text, p_visitor text, p_viewer uuid default null)
+returns boolean language plpgsql security definer set search_path = '' as $$
+declare
+  v_shop uuid := private.site_shop(p_slug);
+  v_piece uuid;
+begin
+  if v_shop is null or char_length(coalesce(p_visitor, '')) > 128 then
+    return false;
+  end if;
+  if p_viewer is not null and exists (
+    select 1 from public.shop_members m where m.shop_id = v_shop and m.user_id = p_viewer
+  ) then
+    return false;
+  end if;
+  if p_sku is not null then
+    select p.id into v_piece from public.pieces p where p.shop_id = v_shop and p.sku = p_sku and p.on_website;
+    if v_piece is null then
+      return false;
+    end if;
+  end if;
+  perform pg_advisory_xact_lock(hashtextextended('siteview:' || v_shop::text, 0));
+  if p_visitor is not null and exists (
+    select 1 from public.site_views v
+    where v.shop_id = v_shop and v.visitor_hash = p_visitor and v.piece_id is not distinct from v_piece
+      and v.viewed_at > now() - interval '30 minutes'
+  ) then
+    return false;
+  end if;
+  if (select count(*) from public.site_views v where v.shop_id = v_shop and v.viewed_at > now() - interval '1 hour') >= 5000 then
+    return false;
+  end if;
+  insert into public.site_views (shop_id, piece_id, visitor_hash) values (v_shop, v_piece, p_visitor);
+  return true;
+end $$;
+
+-- ---------------------------------------------------------------- reports and the Takara dashboard
+
+-- Takara's own team (not shop staff). Added by hand in the SQL editor; see README.
+create table public.platform_admins (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+alter table public.platform_admins enable row level security;
+
+create function private.is_platform_admin() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.platform_admins a where a.user_id = (select auth.uid()))
+$$;
+
+create function public.is_platform_admin() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select private.is_platform_admin()
+$$;
+
+-- Activity between two moments, for one shop (p_shop) or all shops (null).
+-- Counts only: no client names, phone numbers or messages.
+create function private.shop_stats(p_shop uuid, p_from timestamptz, p_to timestamptz) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'site_visitors', (select count(distinct coalesce(v.visitor_hash, v.id::text)) from public.site_views v
+                      where (p_shop is null or v.shop_id = p_shop) and v.viewed_at >= p_from and v.viewed_at < p_to),
+    'piece_views', (select count(*) from public.site_views v
+                    where (p_shop is null or v.shop_id = p_shop) and v.piece_id is not null
+                      and v.viewed_at >= p_from and v.viewed_at < p_to),
+    'trays', (select count(*) from public.site_trays t
+              where (p_shop is null or t.shop_id = p_shop) and t.created_at >= p_from and t.created_at < p_to),
+    'trays_whatsapp', (select count(*) from public.site_trays t
+                       where (p_shop is null or t.shop_id = p_shop) and t.channel = 'whatsapp'
+                         and t.created_at >= p_from and t.created_at < p_to),
+    'trays_in_store', (select count(*) from public.site_trays t
+                       where (p_shop is null or t.shop_id = p_shop) and t.channel = 'in_store'
+                         and t.created_at >= p_from and t.created_at < p_to),
+    'trays_opened', (select count(*) from public.site_trays t
+                     where (p_shop is null or t.shop_id = p_shop) and t.opened_at >= p_from and t.opened_at < p_to),
+    'shares', (select count(*) from public.shares s
+               where (p_shop is null or s.shop_id = p_shop) and s.created_at >= p_from and s.created_at < p_to),
+    'shares_opened', (select count(distinct sv.share_id) from public.share_views sv
+                      join public.shares s on s.id = sv.share_id
+                      where (p_shop is null or s.shop_id = p_shop) and sv.viewed_at >= p_from and sv.viewed_at < p_to),
+    'sold', (select count(*) from public.pieces p
+             where (p_shop is null or p.shop_id = p_shop) and p.status = 'sold' and p.sold_at >= p_from and p.sold_at < p_to),
+    'sold_value', (select coalesce(sum(p.sold_value_aed), 0) from public.pieces p
+                   where (p_shop is null or p.shop_id = p_shop) and p.status = 'sold' and p.sold_at >= p_from and p.sold_at < p_to),
+    'sold_by', coalesce((
+      select jsonb_object_agg(x.via, jsonb_build_object('count', x.n, 'value', x.v))
+      from (select coalesce(p.sold_via, 'unknown') as via, count(*) as n, coalesce(sum(p.sold_value_aed), 0) as v
+            from public.pieces p
+            where (p_shop is null or p.shop_id = p_shop) and p.status = 'sold' and p.sold_at >= p_from and p.sold_at < p_to
+            group by 1) x), '{}'::jsonb),
+    'pieces_added', (select count(*) from public.pieces p
+                     where (p_shop is null or p.shop_id = p_shop) and p.created_at >= p_from and p.created_at < p_to),
+    'spins_added', (select count(distinct m.piece_id) from public.piece_media m
+                    where (p_shop is null or m.shop_id = p_shop) and m.type = 'spin_sprite'
+                      and m.created_at >= p_from and m.created_at < p_to),
+    'ai_fills', (select count(*) from public.ai_requests a
+                 where (p_shop is null or a.shop_id = p_shop) and a.kind = 'fill' and a.status = 'ok'
+                   and a.created_at >= p_from and a.created_at < p_to),
+    'ai_messages', (select count(*) from public.ai_requests a
+                    where (p_shop is null or a.shop_id = p_shop) and a.kind = 'message' and a.status = 'ok'
+                      and a.created_at >= p_from and a.created_at < p_to),
+    'ai_tokens', coalesce((
+      select jsonb_object_agg(x.model, jsonb_build_object('in', x.i, 'out', x.o))
+      from (select coalesce(a.model, 'unknown') as model, coalesce(sum(a.input_tokens), 0) as i, coalesce(sum(a.output_tokens), 0) as o
+            from public.ai_requests a
+            where (p_shop is null or a.shop_id = p_shop) and a.created_at >= p_from and a.created_at < p_to
+              and (a.input_tokens is not null or a.output_tokens is not null)
+            group by 1) x), '{}'::jsonb),
+    'rate_days', (select count(distinct (g.set_at at time zone 'Asia/Dubai')::date) from public.gold_rates g
+                  where (p_shop is null or g.shop_id = p_shop) and g.set_at >= p_from and g.set_at < p_to))
+$$;
+
+-- Start of a calendar month in Dubai, as a moment in time.
+create function private.dubai_month(p_month date) returns timestamptz
+language sql stable set search_path = '' as $$
+  select (date_trunc('month', p_month)::date)::timestamp at time zone 'Asia/Dubai'
+$$;
+
+-- The monthly report: this month (or p_month) against the month before. Owners of the shop
+-- and Takara admins only.
+create function public.shop_report(p_shop uuid, p_month date default null) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_month date := date_trunc('month', coalesce(p_month, (now() at time zone 'Asia/Dubai')::date))::date;
+  v_from timestamptz := private.dubai_month(v_month);
+  v_to timestamptz := private.dubai_month((v_month + interval '1 month')::date);
+  v_prev timestamptz := private.dubai_month((v_month - interval '1 month')::date);
+begin
+  if not (private.has_role(p_shop, array['owner']::public.member_role[]) or private.is_platform_admin()) then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  return jsonb_build_object(
+    'month', v_month,
+    'current', private.shop_stats(p_shop, v_from, v_to),
+    'previous', private.shop_stats(p_shop, v_prev, v_from),
+    'top_pieces', coalesce((
+      select jsonb_agg(jsonb_build_object('id', x.id, 'name', x.name, 'sku', x.sku, 'views', x.n) order by x.n desc, x.name)
+      from (select p.id, p.name, p.sku, count(*) as n
+            from public.site_views v join public.pieces p on p.id = v.piece_id
+            where v.shop_id = p_shop and v.viewed_at >= v_from and v.viewed_at < v_to
+            group by p.id order by n desc limit 5) x), '[]'::jsonb),
+    'in_stock', (select count(*) from public.pieces p where p.shop_id = p_shop and p.status <> 'sold'),
+    'with_spin', (select count(*) from public.pieces p where p.shop_id = p_shop and p.status <> 'sold'
+                  and exists (select 1 from public.piece_media m where m.piece_id = p.id and m.type = 'spin_sprite')),
+    'site', (select jsonb_build_object('slug', s.slug, 'published', s.published) from public.shop_sites s where s.shop_id = p_shop));
+end $$;
+
+-- Most recent moment anything happened in a shop.
+create function private.shop_last_activity(p_shop uuid) returns timestamptz
+language sql stable security definer set search_path = '' as $$
+  select max(t) from (
+    select max(created_at) as t from public.events where shop_id = p_shop
+    union all select max(created_at) from public.pieces where shop_id = p_shop
+    union all select max(set_at) from public.gold_rates where shop_id = p_shop
+    union all select max(opened_at) from public.site_trays where shop_id = p_shop
+  ) x
+$$;
+
+-- Takara dashboard: totals across shops, this month against last, and a 12-month trend.
+create function public.admin_overview() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_month date := date_trunc('month', (now() at time zone 'Asia/Dubai')::date)::date;
+begin
+  if not private.is_platform_admin() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  return jsonb_build_object(
+    'month', v_month,
+    'shops', (select count(*) from public.shops),
+    'active_shops', (select count(*) from public.shops s where private.shop_last_activity(s.id) > now() - interval '7 days'),
+    'published_sites', (select count(*) from public.shop_sites where published),
+    'current', private.shop_stats(null, private.dubai_month(v_month), private.dubai_month((v_month + interval '1 month')::date)),
+    'previous', private.shop_stats(null, private.dubai_month((v_month - interval '1 month')::date), private.dubai_month(v_month)),
+    'trend', (
+      select jsonb_agg(jsonb_build_object(
+               'month', m.d,
+               'pieces_added', (select count(*) from public.pieces p
+                                where p.created_at >= private.dubai_month(m.d) and p.created_at < private.dubai_month((m.d + interval '1 month')::date)),
+               'trays', (select count(*) from public.site_trays t
+                         where t.created_at >= private.dubai_month(m.d) and t.created_at < private.dubai_month((m.d + interval '1 month')::date)),
+               'sold', (select count(*) from public.pieces p
+                        where p.status = 'sold' and p.sold_at >= private.dubai_month(m.d) and p.sold_at < private.dubai_month((m.d + interval '1 month')::date)),
+               'site_visitors', (select count(distinct coalesce(v.visitor_hash, v.id::text)) from public.site_views v
+                                 where v.viewed_at >= private.dubai_month(m.d) and v.viewed_at < private.dubai_month((m.d + interval '1 month')::date)))
+             order by m.d)
+      from (select (v_month - make_interval(months => g))::date as d from generate_series(0, 11) g) m));
+end $$;
+
+-- Takara dashboard: one row per shop with the last 30 days and warning flags.
+create function public.admin_shops() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_since timestamptz := now() - interval '30 days';
+begin
+  if not private.is_platform_admin() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  return coalesce((
+    select jsonb_agg(x.r order by x.last_activity desc nulls last)
+    from (
+      select private.shop_last_activity(s.id) as last_activity,
+        jsonb_build_object(
+          'id', s.id, 'name', s.name, 'created_at', s.created_at,
+          'last_activity', private.shop_last_activity(s.id),
+          'staff', (select count(*) from public.shop_members m where m.shop_id = s.id),
+          'in_stock', (select count(*) from public.pieces p where p.shop_id = s.id and p.status <> 'sold'),
+          'rates_set_at', (select max(g.set_at) from public.gold_rates g where g.shop_id = s.id),
+          'site', (select jsonb_build_object('slug', ss.slug, 'published', ss.published) from public.shop_sites ss where ss.shop_id = s.id),
+          'last30', private.shop_stats(s.id, v_since, now())) as r
+      from public.shops s) x), '[]'::jsonb);
+end $$;
+
+-- Takara dashboard: one shop in detail: owner contact, report and recent activity.
+create function public.admin_shop(p_shop uuid) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_shop public.shops%rowtype;
+begin
+  if not private.is_platform_admin() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  select * into v_shop from public.shops where id = p_shop;
+  if not found then
+    return null;
+  end if;
+  return jsonb_build_object(
+    'id', v_shop.id, 'name', v_shop.name, 'created_at', v_shop.created_at,
+    'last_activity', private.shop_last_activity(v_shop.id),
+    'staff', (select count(*) from public.shop_members m where m.shop_id = v_shop.id),
+    -- The shop owner is Takara's customer, so their contact details are shown.
+    'owners', coalesce((
+      select jsonb_agg(jsonb_build_object('name', pr.display_name, 'phone', pr.phone))
+      from public.shop_members m join public.profiles pr on pr.user_id = m.user_id
+      where m.shop_id = v_shop.id and m.role = 'owner'), '[]'::jsonb),
+    'site', (select jsonb_build_object('slug', ss.slug, 'published', ss.published, 'price_mode', ss.price_mode)
+             from public.shop_sites ss where ss.shop_id = v_shop.id),
+    'report', public.shop_report(v_shop.id, null),
+    'activity', coalesce((
+      select jsonb_agg(a.j order by a.at desc)
+      from (
+        (select e.created_at as at, jsonb_build_object(
+            'at', e.created_at, 'kind', e.name, 'props', e.props - 'request_id' - 'visitor',
+            'piece', (select jsonb_build_object('name', p.name, 'sku', p.sku, 'sold_via', p.sold_via)
+                      from public.pieces p where p.id = private.try_uuid(e.props ->> 'piece_id')),
+            'tray', (select t.code from public.site_trays t where t.id = private.try_uuid(e.props ->> 'tray_id'))) as j
+         from public.events e where e.shop_id = v_shop.id
+         order by e.created_at desc limit 60)
+        union all
+        (select g.set_at, jsonb_build_object('at', g.set_at, 'kind', 'rates_set', 'props', jsonb_build_object('karats', count(*)))
+         from public.gold_rates g where g.shop_id = v_shop.id
+         group by g.set_at order by g.set_at desc limit 20)
+      ) a), '[]'::jsonb));
+end $$;
+
+-- ---------------------------------------------------------------- privileges for functions
+
+revoke all on function private.pieces_sold_fields(), private.new_tray_code(), private.site_visible(uuid),
+  private.site_shop(text), private.site_piece_json(uuid, boolean), private.site_rates(uuid),
+  private.is_platform_admin(), private.shop_stats(uuid, timestamptz, timestamptz), private.dubai_month(date),
+  private.shop_last_activity(uuid) from public;
+grant execute on function private.new_tray_code(), private.site_visible(uuid),
+  private.site_shop(text), private.site_piece_json(uuid, boolean), private.site_rates(uuid),
+  private.is_platform_admin(), private.shop_stats(uuid, timestamptz, timestamptz), private.dubai_month(date),
+  private.shop_last_activity(uuid) to authenticated, service_role;
+
+-- Signed-in members and admins.
+revoke all on function public.set_piece_status(uuid, public.piece_status, text, numeric, uuid),
+  public.set_sold_via(uuid, text), public.set_on_website(uuid, uuid[], boolean), public.open_tray(uuid, text),
+  public.is_platform_admin(), public.shop_report(uuid, date), public.admin_overview(), public.admin_shops(),
+  public.admin_shop(uuid) from public, anon;
+grant execute on function public.set_piece_status(uuid, public.piece_status, text, numeric, uuid),
+  public.set_sold_via(uuid, text), public.set_on_website(uuid, uuid[], boolean), public.open_tray(uuid, text),
+  public.is_platform_admin(), public.shop_report(uuid, date), public.admin_overview(), public.admin_shops(),
+  public.admin_shop(uuid) to authenticated;
+
+-- Website functions: the server only (service role). They return making charges.
+revoke all on function public.get_site(text), public.list_site_pieces(text, text, integer, numeric, numeric, text, text, integer, integer),
+  public.get_site_piece(text, text), public.site_pieces(text, uuid[]), public.site_sitemap(text), public.site_media_bucket(text, text),
+  public.create_tray(text, uuid[], text, text), public.get_tray(text, text), public.record_site_view(text, text, text, uuid)
+  from public, anon, authenticated;
+grant execute on function public.get_site(text), public.list_site_pieces(text, text, integer, numeric, numeric, text, text, integer, integer),
+  public.get_site_piece(text, text), public.site_pieces(text, uuid[]), public.site_sitemap(text), public.site_media_bucket(text, text),
+  public.create_tray(text, uuid[], text, text), public.get_tray(text, text), public.record_site_view(text, text, text, uuid)
+  to service_role;

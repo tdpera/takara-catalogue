@@ -15,6 +15,7 @@ import { btn, btnPrimary } from "@/components/ui";
 import { IconCheck, IconShare, IconTurn } from "@/components/icons";
 import { TiltTile } from "@/components/TiltTile";
 import { navigateWithMorph, vtReady } from "@/lib/view-transition";
+import { setOnWebsite } from "@/app/website/actions";
 
 const KEY = (shop: string) => `souq.selection.${shop}`;
 
@@ -40,7 +41,7 @@ function useSelection(shopId: string) {
   };
 }
 
-function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; selected: boolean; onToggle: () => void }) {
+function PieceCard({ c, index, selected, onToggle, hasSite }: { c: Card; index: number; selected: boolean; onToggle: () => void; hasSite: boolean }) {
   const { t } = useT();
   const router = useRouter();
   const tile = useRef<HTMLDivElement>(null);
@@ -84,6 +85,11 @@ function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; s
               {t(`status.${c.status}`)}
             </span>
           )}
+          {hasSite && !c.onWebsite && (
+            <span className="caps pointer-events-none absolute end-2 bottom-2 rounded-[2px] bg-paper/90 px-1.5 py-1 text-[10px] font-semibold text-muted backdrop-blur-sm">
+              {t("website.hiddenBadge")}
+            </span>
+          )}
         </TiltTile>
         <div className="pt-3">
           <h2 className="line-clamp-2 font-display text-[16.5px] leading-snug [overflow-wrap:anywhere]">{c.name}</h2>
@@ -119,16 +125,25 @@ function PieceCard({ c, index, selected, onToggle }: { c: Card; index: number; s
   );
 }
 
-export function Grid({ shopId, cards }: { shopId: string; cards: Card[] }) {
+export function Grid({ shopId, cards, isAdmin = false, hasSite = false }: { shopId: string; cards: Card[]; isAdmin?: boolean; hasSite?: boolean }) {
   const { t } = useT();
   const sel = useSelection(shopId);
   const router = useRouter();
   const [note, setNote] = useState<MessageKey | null>(null);
+  const [busy, setBusy] = useState(false);
+  const website = async (on: boolean) => {
+    setBusy(true);
+    const r = await setOnWebsite(sel.ids, on);
+    setBusy(false);
+    if ("error" in r) return setNote(r.error);
+    setNote(on ? "website.shownDone" : "website.hiddenDone");
+    router.refresh();
+  };
   return (
     <>
       <ul className="grid grid-cols-2 gap-x-3.5 gap-y-7 sm:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] sm:gap-x-6 sm:gap-y-9">
         {cards.map((c, i) => (
-          <PieceCard key={c.id} c={c} index={i} selected={sel.has(c.id)} onToggle={() => sel.toggle(c.id)} />
+          <PieceCard key={c.id} c={c} index={i} selected={sel.has(c.id)} onToggle={() => sel.toggle(c.id)} hasSite={hasSite} />
         ))}
       </ul>
       {sel.ids.length > 0 && (
@@ -138,6 +153,12 @@ export function Grid({ shopId, cards }: { shopId: string; cards: Card[] }) {
             <button type="button" className={btn} onClick={() => { sel.clear(); setNote(null); }}>
               {t("catalogue.clearSelection")}
             </button>
+            {isAdmin && hasSite && (
+              <>
+                <button type="button" className={btn} disabled={busy} onClick={() => website(false)}>{t("website.hideSelected")}</button>
+                <button type="button" className={btn} disabled={busy} onClick={() => website(true)}>{t("website.showSelected")}</button>
+              </>
+            )}
             <button type="button" className={btnPrimary} onClick={() => {
                 if (sel.ids.length > 24) return setNote("share.tooMany");
                 router.push(`/share?ids=${sel.ids.join(",")}`);

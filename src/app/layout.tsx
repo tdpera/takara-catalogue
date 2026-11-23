@@ -4,7 +4,7 @@ import { I18nProvider } from "@/i18n/client";
 import { dirFor } from "@/i18n";
 import { getLocale } from "@/i18n/server";
 import { ServiceWorker } from "@/components/ServiceWorker";
-import { SPLASH_SCRIPT, Splash } from "@/components/Splash";
+import { SPLASH_RUN, SPLASH_SCRIPT, Splash } from "@/components/Splash";
 import { makeT } from "@/i18n";
 import { display, sans } from "./fonts";
 
@@ -36,6 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-dvh antialiased">
         <Splash name={t("app.name")} tagline={t("app.tagline")} city={t("app.city")} />
+        <script dangerouslySetInnerHTML={{ __html: SPLASH_RUN }} />
         <a
           href="#main"
           className="sr-only z-50 rounded-xl bg-ink px-4 py-3 font-semibold text-paper focus:not-sr-only focus:fixed focus:start-3 focus:top-3"

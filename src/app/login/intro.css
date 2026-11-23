@@ -13,8 +13,8 @@
   --dim: #b9ad99;
   overflow-x: clip;
 }
-/* The launch animation covers the first ~2.2 s: start the hero's entrance as it lifts. */
-html:not([data-splash="off"]) .intro { --hero-delay: 2.25s; }
+/* The launch film covers the first ~3.6 s: start the hero's entrance as we fly through the ring. */
+html:not([data-splash="off"]) .intro { --hero-delay: 3.75s; }
 
 /* ---------------------------------------------------------------- hero */
 .intro-hero {

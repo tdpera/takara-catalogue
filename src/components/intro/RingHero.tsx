@@ -94,7 +94,7 @@ export function RingHero() {
 
     // Let the launch animation finish first (it needs the graphics chip more than we do).
     const splashOn = document.documentElement.getAttribute("data-splash") !== "off" && !reduce;
-    const timer = window.setTimeout(start, splashOn ? 2300 : 60);
+    const timer = window.setTimeout(start, splashOn ? 4300 : 60);
 
     const io = new IntersectionObserver(([e]) => {
       visible = e.isIntersecting;

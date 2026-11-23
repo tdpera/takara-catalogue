@@ -364,66 +364,91 @@ details[open] > summary .chev { transform: rotate(180deg); }
 }
 
 /* ---------------------------------------------------------------- Splash (launch animation)
-   "Through the ring", on black velvet: molten gold runs round the ring and settles (0.1–1.4 s),
-   the diamond drops into its setting and flashes with a burst of rays (0.95–1.9 s), TAKARA rises
-   letter by letter in gold with a light sweeping across (0.95–2.0 s), then the camera flies
-   through the ring (2.0–2.85 s): one animated number, --fly, scales the ring past the screen
-   edges and opens a hole the size of its centre onto the app underneath, so the two always match.
-   Browsers without @property cut straight to the app at the same moment. */
+   A rendered film (components/Splash.tsx). Nothing moves until SPLASH_RUN picks a mode:
+   - data-mode="film": the film plays (0–3.6 s); the name rises in as the stone flares (2.55 s);
+     then the camera flies through the ring (3.55–4.35 s): one animated number, --fly, scales
+     the film past the screen edges and opens a hole the size of the ring's centre onto the app.
+   - data-mode="still": the finished ring as a photo, a glint on the stone, the name, the same exit,
+     all in about 2.7 s.
+   A failsafe hides the splash at 7 s even if no script runs. */
 @property --fly { syntax: "<number>"; inherits: true; initial-value: 1; }
 .splash {
   --fly: 1;
-  --hole: calc((var(--fly) - 1) * 30px);
+  --stage: min(94vw, 54vh, 480px);
+  --hole: calc((var(--fly) - 1) * 0.235 * var(--stage));
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: radial-gradient(ellipse 85% 60% at 50% 40%, #2a1f12 0%, #120e09 55%, #080605 100%);
+  /* matched to the film's own backdrop, so its frame is invisible */
+  background: radial-gradient(ellipse 75% 55% at 50% 40%, #2c2319 0%, #221b14 55%, #16110c 100%);
   color: #f3eee4;
   pointer-events: none;
   -webkit-mask-image: radial-gradient(circle at 50% 40%, transparent calc(var(--hole) - 2px), #000 var(--hole));
   mask-image: radial-gradient(circle at 50% 40%, transparent calc(var(--hole) - 2px), #000 var(--hole));
-  animation: splash-fly 0.85s cubic-bezier(0.7, 0, 0.84, 0) 2s forwards, splash-gone 0.01s steps(1, end) 2.86s forwards;
+  animation: splash-failsafe 0.01s steps(1, end) 7s forwards;
 }
 html[data-splash="off"] .splash { display: none; }
+/* "from, to": hidden for the whole step. With only "to", the end of a steps() animation can land at
+   progress 0.99999… (floating point) and snap back to visible, so the splash would never leave. */
+@keyframes splash-failsafe { from, to { visibility: hidden; opacity: 0; display: none; } }
 @keyframes splash-fly { to { --fly: 46; } }
-/* Gone for good afterwards (not just transparent), so nothing is left over the app. */
-@keyframes splash-gone { to { visibility: hidden; opacity: 0; display: none; } }
+.splash[data-mode="film"] { animation: splash-failsafe 0.01s steps(1, end) 7s forwards, splash-fly 0.8s cubic-bezier(0.7, 0, 0.84, 0) 3.55s forwards, film-gone 0.01s steps(1, end) 4.36s forwards; }
+.splash[data-mode="still"] { animation: splash-failsafe 0.01s steps(1, end) 7s forwards, splash-fly 0.8s cubic-bezier(0.7, 0, 0.84, 0) 1.9s forwards, still-gone 0.01s steps(1, end) 2.71s forwards; }
+@keyframes film-gone { from, to { visibility: hidden; opacity: 0; display: none; } }
+@keyframes still-gone { from, to { visibility: hidden; opacity: 0; display: none; } }
 
-.splash-ring {
+.splash-stage {
   position: absolute;
   left: 50%;
   top: 40%;
-  width: 112px;
-  height: 112px;
-  margin: -56px 0 0 -56px;
+  width: var(--stage);
+  height: var(--stage);
+  margin: calc(var(--stage) / -2) 0 0 calc(var(--stage) / -2);
   transform: scale(var(--fly));
-  filter: drop-shadow(0 0 14px rgb(226 184 92 / 0.35));
+  /* the film's frame melts into the page: no hard edge anywhere */
+  -webkit-mask-image: radial-gradient(closest-side, #000 82%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 82%, transparent 100%);
 }
-.sp-band { stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw-stroke 1.15s var(--ease-in-out) 0.1s forwards; }
-.sp-gem { opacity: 0; transform-box: fill-box; transform-origin: center; animation: sp-gem 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) 0.95s forwards; }
-@keyframes sp-gem { from { opacity: 0; transform: translateY(-14px) scale(0.6); } to { opacity: 1; transform: none; } }
-.sp-flash, .sp-star, .sp-rays { opacity: 0; transform-box: fill-box; transform-origin: center; }
-.sp-flash { animation: sp-flash 0.7s ease-out 1.32s; }
-@keyframes sp-flash { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.7); } }
-.sp-star { animation: sp-star 0.75s var(--ease-out) 1.32s; }
-@keyframes sp-star { 0% { opacity: 0; transform: scale(0) rotate(-30deg); } 35% { opacity: 1; transform: scale(1.15) rotate(0); } 100% { opacity: 0; transform: scale(0.4) rotate(25deg); } }
-.sp-rays { animation: sp-rays 0.8s ease-out 1.32s; }
-@keyframes sp-rays { 0% { opacity: 0; transform: scale(0.5); } 35% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1.5); } }
+.splash-film, .splash-still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.splash-still { opacity: 0; }
+.splash[data-mode="still"] .splash-film { display: none; }
+.splash[data-mode="still"] .splash-still { animation: fade 0.5s ease forwards; }
+/* A glint on the stone for the still (the film has its own). */
+.splash-glint {
+  position: absolute;
+  left: 50%;
+  top: 13%;
+  width: 46%;
+  height: 46%;
+  margin: -23% 0 0 -23%;
+  opacity: 0;
+  background:
+    radial-gradient(circle, rgb(255 251 240 / 0.95) 0 1.5%, rgb(255 244 214 / 0.35) 6%, transparent 24%),
+    linear-gradient(90deg, transparent 0 49.6%, rgb(255 250 238 / 0.9) 50%, transparent 50.4%) center / 100% 2px no-repeat,
+    linear-gradient(0deg, transparent 0 49.6%, rgb(255 250 238 / 0.9) 50%, transparent 50.4%) center / 2px 100% no-repeat;
+  -webkit-mask-image: radial-gradient(closest-side, #000, transparent);
+  mask-image: radial-gradient(closest-side, #000, transparent);
+  mix-blend-mode: screen;
+}
+.splash[data-mode="still"] .splash-glint { animation: still-glint 0.9s ease-out 0.55s forwards; }
+@keyframes still-glint { 0% { opacity: 0; transform: scale(0.2) rotate(-20deg); } 35% { opacity: 1; transform: scale(1) rotate(0); } 100% { opacity: 0; transform: scale(0.7) rotate(15deg); } }
 
 .splash-text {
   position: absolute;
-  top: calc(40% + 84px);
+  top: calc(40% + var(--stage) * 0.5 - 4px);
   inset-inline: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: splash-text-out 0.4s ease-in 2s forwards;
 }
+.splash[data-mode] .splash-text { animation: splash-text-out 0.4s ease-in var(--exit) forwards; }
+.splash[data-mode="film"] { --t0: 2.55s; --exit: 3.55s; }
+.splash[data-mode="still"] { --t0: 0.4s; --exit: 1.9s; }
 @keyframes splash-text-out { to { opacity: 0; transform: translateY(-10px) scale(1.04); filter: blur(3px); } }
 .splash-word {
   display: flex;
   font-family: var(--font-display);
-  font-size: 2.6rem;
+  font-size: 2.3rem;
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: 0.34em;
@@ -436,17 +461,20 @@ html[data-splash="off"] .splash { display: none; }
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: splash-letter 0.6s var(--ease-out) both, splash-shine 1.3s ease-in-out both;
-  animation-delay: calc(0.95s + var(--i, 0) * 0.07s), calc(1.3s + var(--i, 0) * 0.06s);
 }
-@keyframes splash-letter { from { opacity: 0; transform: translateY(16px); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
+.splash[data-mode] .splash-word > span {
+  animation: splash-letter 0.6s var(--ease-out) both, splash-shine 1.2s ease-in-out both;
+  animation-delay: calc(var(--t0) + var(--i, 0) * 0.06s), calc(var(--t0) + 0.3s + var(--i, 0) * 0.05s);
+}
+@keyframes splash-letter { from { opacity: 0; transform: translateY(14px); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes splash-shine { from { background-position: 100% 0; } to { background-position: 0% 0; } }
 /* Arabic, Hindi and Malayalam names are one joined word: no spacing, one movement. */
-:lang(ar) .splash-word, :lang(hi) .splash-word, :lang(ml) .splash-word { letter-spacing: 0; margin-inline-start: 0; font-size: 2.4rem; }
+:lang(ar) .splash-word, :lang(hi) .splash-word, :lang(ml) .splash-word { letter-spacing: 0; margin-inline-start: 0; font-size: 2.2rem; }
 
-.splash-line { margin-top: 1.4rem; width: 3rem; height: 1px; background: linear-gradient(90deg, transparent, #e2b85c, transparent); transform: scaleX(0); animation: draw-x 0.6s var(--ease-out) 1.5s forwards; }
+.splash-line { margin-top: 1.1rem; width: 3rem; height: 1px; background: linear-gradient(90deg, transparent, #e2b85c, transparent); transform: scaleX(0); }
+.splash[data-mode] .splash-line { animation: draw-x 0.6s var(--ease-out) calc(var(--t0) + 0.35s) forwards; }
 .splash-tag {
-  margin-top: 1.2rem;
+  margin-top: 1rem;
   max-width: 17rem;
   padding: 0 1rem;
   text-align: center;
@@ -455,9 +483,10 @@ html[data-splash="off"] .splash { display: none; }
   line-height: 1.7;
   color: #b9ad99;
   opacity: 0;
-  animation: rise 0.6s var(--ease-out) 1.6s forwards;
 }
-.splash-foot { position: absolute; bottom: calc(3rem + env(safe-area-inset-bottom)); inset-inline: 0; text-align: center; font-size: 0.64rem; font-weight: 600; color: #8c816f; opacity: 0; animation: fade 0.8s ease 1.7s forwards, fade 0.3s ease 2s reverse forwards; }
+.splash[data-mode] .splash-tag { animation: rise 0.6s var(--ease-out) calc(var(--t0) + 0.45s) forwards; }
+.splash-foot { position: absolute; bottom: calc(2.5rem + env(safe-area-inset-bottom)); inset-inline: 0; text-align: center; font-size: 0.75rem; font-weight: 600; color: #8c816f; opacity: 0; }
+.splash[data-mode] .splash-foot { animation: fade 0.8s ease calc(var(--t0) + 0.5s) forwards, fade 0.3s ease var(--exit) reverse forwards; }
 
 /* ---------------------------------------------------------------- Reduced motion */
 @media (prefers-reduced-motion: reduce) {

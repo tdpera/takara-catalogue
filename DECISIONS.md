@@ -534,3 +534,24 @@ four languages.
   and was skipped), catalogue 93, piece 94, client page 93. The launch animation now removes
   itself completely when done (display: none), so nothing lingers over the app for tools or
   assistive technology.
+
+## 24. A realistic launch film ("forged ring")
+Feedback: the line-drawn launch looked machine-made; it should look real: a ring forged from
+molten gold, then the stone flashing.
+- **A rendered film instead of drawn lines.** scripts/splash-film/forge.frag is a ray-marched
+  scene rendered offline (render.mjs, headless Chromium, twice the output size then scaled down,
+  bloom and grain added with ffmpeg): molten gold pours in, runs round the band from the bottom
+  up both sides with liquid, bulging fronts and sparks, lights a polished dark stone floor, cools
+  from yellow-orange heat (molten gold's colour, not blue-white) through red to polished gold;
+  the head and prongs rise; the diamond is set and traced through internal reflections with
+  dispersion; a photographic star flares off it. 3.6 s, 800 × 800, about 0.5 MB.
+- **Why a video, not live 3D:** offline rendering can afford effects phones can't draw in real
+  time (multi-bounce diamond, bloom, reflections, sparks), and every phone sees the same quality
+  with no graphics load while the app starts.
+- **Kind to slow connections:** the film is requested only when the splash really plays, is
+  cached for a year under a versioned name (ring-v1.*), and if it hasn't started within 1.4 s
+  (or Save-Data is on) a still of the finished ring with a CSS glint plays instead. A failsafe
+  hides the splash after 7 s whatever happens; taps always pass through to the app.
+- The name, tagline and city stay real text over the film (crisp, and in the user's language);
+  the exit still flies through the ring, with the film scaled by the same --fly value that opens
+  the hole onto the app.

@@ -8,6 +8,8 @@ import { ServiceWorker } from "@/components/ServiceWorker";
 import { SPLASH_RUN, SPLASH_SCRIPT, Splash } from "@/components/Splash";
 import { makeT } from "@/i18n";
 import { display, sans } from "./fonts";
+import { schemaState } from "@/lib/schema";
+import { DatabaseUpdate } from "@/components/DatabaseUpdate";
 
 export const metadata: Metadata = {
   title: { default: "Takara", template: "%s · Takara" },
@@ -31,6 +33,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Takara's launch film or the app's offline service worker.
   const h = await headers();
   const siteLang = h.get("x-site-slug") ? h.get("x-site-lang") : null;
+  // A migration not run yet: say which update to paste, instead of failing with an error.
+  const schema = await schemaState();
+  if (!schema.ok) {
+    const locale = siteLang && isLocale(siteLang) ? siteLang : await getLocale();
+    return (
+      <html lang={locale} dir={dirFor(locale)} className={`${display.variable} ${sans.variable}`}>
+        <body className="min-h-dvh bg-paper antialiased">
+          <DatabaseUpdate file={schema.file} t={makeT(locale)} />
+        </body>
+      </html>
+    );
+  }
   if (siteLang !== null) {
     const lang = isLocale(siteLang) ? siteLang : "en";
     return (

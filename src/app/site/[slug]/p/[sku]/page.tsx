@@ -58,8 +58,8 @@ export default async function SitePiecePage({ params }: P) {
     <main id="main" className="mx-auto max-w-6xl px-4 pt-3 pb-6">
       <SiteBeacon slug={slug} sku={piece.sku} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
-      <a href={`${base}/collection`} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
-        <IconBack size={18} className="rtl:rotate-180" /> {t("site.collection")}
+      <a href={`${base}/#showcase`} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
+        <IconBack size={18} className="rtl:rotate-180" /> {t("site.showcase")}
       </a>
       <div className="mt-1 grid gap-6 md:grid-cols-[1.1fr_1fr] md:items-start md:gap-10">
         <div className="md:sticky md:top-24">

@@ -25,25 +25,25 @@ const NOTE: Record<MsgLang, { vat: string; noVat: string; noPrice: string; link:
     vat: "Prices include 5% VAT, follow today's gold rate and are confirmed in store.",
     noVat: "Prices follow today's gold rate and are confirmed in store.",
     noPrice: "price confirmed in store",
-    link: "See the pieces, with 360° views:",
+    link: "Your tray, with 360° views. Tick the pieces you'd like to see:",
   },
   ar: {
     vat: "الأسعار شاملة ضريبة القيمة المضافة 5%، وتتبع سعر الذهب اليوم، ويتم تأكيدها في المحل.",
     noVat: "الأسعار تتبع سعر الذهب اليوم، ويتم تأكيدها في المحل.",
     noPrice: "السعر يُؤكَّد في المحل",
-    link: "شاهد القطع بعرض 360°:",
+    link: "القطع المختارة لك بعرض 360°. اختر ما تودّ رؤيته:",
   },
   hi: {
     vat: "कीमतों में 5% VAT शामिल है, ये आज के सोने के रेट पर आधारित हैं और दुकान में पक्की की जाएँगी।",
     noVat: "कीमतें आज के सोने के रेट पर आधारित हैं और दुकान में पक्की की जाएँगी।",
     noPrice: "कीमत दुकान में पक्की होगी",
-    link: "पीस 360° व्यू के साथ देखें:",
+    link: "आपकी ट्रे, 360° व्यू के साथ। जो पीस देखना चाहें, उन्हें चुनें:",
   },
   ml: {
     vat: "വിലകളിൽ 5% VAT ഉൾപ്പെടുന്നു, ഇന്നത്തെ സ്വർണ്ണ നിരക്ക് അനുസരിച്ചാണ്, കടയിൽ ഉറപ്പാക്കും.",
     noVat: "വിലകൾ ഇന്നത്തെ സ്വർണ്ണ നിരക്ക് അനുസരിച്ചാണ്, കടയിൽ ഉറപ്പാക്കും.",
     noPrice: "വില കടയിൽ ഉറപ്പാക്കും",
-    link: "പീസുകൾ 360° കാഴ്ചയോടെ കാണുക:",
+    link: "നിങ്ങളുടെ ട്രേ, 360° കാഴ്ചയോടെ. കാണാൻ ആഗ്രഹിക്കുന്ന പീസുകൾ തിരഞ്ഞെടുക്കുക:",
   },
 };
 

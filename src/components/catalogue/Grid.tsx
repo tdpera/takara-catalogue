@@ -12,7 +12,7 @@ import type { Card } from "@/lib/catalogue";
 import { formatGrams } from "@/lib/format";
 import { SpinViewer } from "@/components/SpinViewer";
 import { btn, btnPrimary } from "@/components/ui";
-import { IconCheck, IconShare, IconTurn } from "@/components/icons";
+import { IconCheck, IconTray, IconTurn } from "@/components/icons";
 import { TiltTile } from "@/components/TiltTile";
 import { navigateWithMorph, vtReady } from "@/lib/view-transition";
 import { setOnWebsite } from "@/app/website/actions";
@@ -85,9 +85,9 @@ function PieceCard({ c, index, selected, onToggle, hasSite }: { c: Card; index: 
               {t(`status.${c.status}`)}
             </span>
           )}
-          {hasSite && !c.onWebsite && (
-            <span className="caps pointer-events-none absolute end-2 bottom-2 rounded-[2px] bg-paper/90 px-1.5 py-1 text-[10px] font-semibold text-muted backdrop-blur-sm">
-              {t("website.hiddenBadge")}
+          {hasSite && c.onWebsite && (
+            <span className="caps pointer-events-none absolute end-2 bottom-2 rounded-[2px] bg-gold-soft/95 px-1.5 py-1 text-[10px] font-semibold text-gold backdrop-blur-sm">
+              {t("website.showcaseBadge")}
             </span>
           )}
         </TiltTile>
@@ -155,15 +155,15 @@ export function Grid({ shopId, cards, isAdmin = false, hasSite = false }: { shop
             </button>
             {isAdmin && hasSite && (
               <>
-                <button type="button" className={btn} disabled={busy} onClick={() => website(false)}>{t("website.hideSelected")}</button>
                 <button type="button" className={btn} disabled={busy} onClick={() => website(true)}>{t("website.showSelected")}</button>
+                <button type="button" className={btn} disabled={busy} onClick={() => website(false)}>{t("website.hideSelected")}</button>
               </>
             )}
             <button type="button" className={btnPrimary} onClick={() => {
                 if (sel.ids.length > 24) return setNote("share.tooMany");
                 router.push(`/share?ids=${sel.ids.join(",")}`);
               }}>
-              <IconShare size={18} /> {t("catalogue.share")}
+              <IconTray size={18} /> {t("catalogue.share")}
             </button>
             {note && <p role="status" className="basis-full text-sm text-muted">{t(note)}</p>}
           </div>

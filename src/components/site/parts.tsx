@@ -91,7 +91,7 @@ function Monogram({ name }: { name: string }) {
 export function SiteHeader({ site, base, path, t }: { site: Site; base: string; path: string; t: Translate }) {
   const home = base || "/";
   const nav = [
-    { href: `${base}/collection`, key: "site.collection" as const, active: path.startsWith("/collection") || path.startsWith("/p/") },
+    { href: `${base}/#showcase`, key: "site.showcase" as const, active: path === "/" || path.startsWith("/p/") },
     { href: `${base}/visit`, key: "site.visit" as const, active: path.startsWith("/visit") },
   ];
   return (
@@ -142,7 +142,7 @@ export function SiteFooter({ site, base, locale, t }: { site: Site; base: string
           {site.hours && <p className="mt-1 text-sm text-muted">{site.hours}</p>}
         </div>
         <ul className="space-y-1 text-sm">
-          <li><a className="inline-flex min-h-11 items-center hover:underline" href={`${base}/collection`}>{t("site.collection")}</a></li>
+          <li><a className="inline-flex min-h-11 items-center hover:underline" href={`${base}/#showcase`}>{t("site.showcase")}</a></li>
           <li><a className="inline-flex min-h-11 items-center hover:underline" href={`${base}/visit`}>{t("site.visit")}</a></li>
           <li><a className="inline-flex min-h-11 items-center hover:underline" href={`${base}/tray`}>{t("site.tray")}</a></li>
         </ul>

@@ -19,6 +19,15 @@ function siteLang(req: NextRequest): { lang: string; remember: boolean } {
 }
 
 function forSite(req: NextRequest, slug: string, onOwnHost: boolean): NextResponse {
+  // The whole collection isn't public any more: its old address goes to the showcase.
+  const rel = onOwnHost ? req.nextUrl.pathname : req.nextUrl.pathname.replace(/^\/site\/[^/]+/, "") || "/";
+  if (rel === "/collection" || rel.startsWith("/collection/")) {
+    const url = req.nextUrl.clone();
+    url.pathname = onOwnHost ? "/" : `/site/${slug}`;
+    url.search = "";
+    url.hash = "showcase";
+    return NextResponse.redirect(url);
+  }
   const headers = new Headers(req.headers);
   OWN_HEADERS.forEach((h) => headers.delete(h));
   const { lang, remember } = siteLang(req);

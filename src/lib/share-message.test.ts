@@ -42,7 +42,7 @@ describe("English template", () => {
 
 describe("WhatsApp", () => {
   it("adds the link with a label", () => {
-    expect(withLink("Hello", "https://x.test/s/abc")).toBe("Hello\n\nSee the pieces, with 360° views:\nhttps://x.test/s/abc");
+    expect(withLink("Hello", "https://x.test/s/abc")).toBe("Hello\n\nYour tray, with 360° views. Tick the pieces you'd like to see:\nhttps://x.test/s/abc");
   });
   it("opens a chat with the client's number, text filled in", () => {
     expect(whatsappLink("+971501234567", "Hi & bye")).toBe("https://wa.me/971501234567?text=Hi%20%26%20bye");

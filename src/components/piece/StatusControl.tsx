@@ -20,19 +20,23 @@ export function StatusControl({ pieceId, status, soldVia = null, suggestion = nu
   const [via, setVia] = useState<Via | null>(soldVia);
   const [msg, setMsg] = useState<{ key: MessageKey; ok: boolean } | null>(null);
   const [pending, start] = useTransition();
-  // A tap on "How did they find it?" right after "Sold" waits for the sale to be saved first.
+  // Taps are saved in order, never dropped: "How did they find it?" right after "Sold" waits for
+  // the sale to be saved, and a quick change of status waits for the answer before it.
   const saving = useRef<Promise<unknown>>(Promise.resolve());
+  const queue = <T,>(fn: () => Promise<T>): Promise<T> => {
+    const call = saving.current.catch(() => {}).then(fn);
+    saving.current = call;
+    return call;
+  };
 
   function choose(next: Status) {
-    if (next === value || pending) return;
+    if (next === value) return;
     const before = value;
     setValue(next);
     setMsg(null);
     if (next !== "sold") setVia(null);
     start(async () => {
-      const call = setStatus(pieceId, next);
-      saving.current = call;
-      const r = await call;
+      const r = await queue(() => setStatus(pieceId, next));
       if (r.ok) setMsg({ key: next === "sold" ? "sold.askHow" : "piece.statusSaved", ok: true });
       else {
         setValue(before);
@@ -46,8 +50,7 @@ export function StatusControl({ pieceId, status, soldVia = null, suggestion = nu
     const target = next === via ? null : next;
     setVia(target);
     start(async () => {
-      await saving.current;
-      const r = await setSoldVia(pieceId, target);
+      const r = await queue(() => setSoldVia(pieceId, target));
       if (r.ok) setMsg({ key: "piece.statusSaved", ok: true });
       else {
         setVia(before);

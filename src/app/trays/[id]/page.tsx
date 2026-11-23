@@ -28,10 +28,14 @@ export default async function TrayPage({ params }: { params: Promise<{ id: strin
   const { t, locale } = await getT();
   const { data: tray } = await supabase
     .from("site_trays")
-    .select("id, shop_id, code, piece_ids, channel, created_at, opened_at")
+    .select("id, shop_id, code, piece_ids, channel, created_at, opened_at, share_id")
     .eq("id", id)
-    .maybeSingle<{ id: string; shop_id: string; code: string; piece_ids: string[]; channel: "whatsapp" | "in_store"; created_at: string; opened_at: string | null }>();
+    .maybeSingle<{ id: string; shop_id: string; code: string; piece_ids: string[]; channel: "whatsapp" | "in_store"; created_at: string; opened_at: string | null; share_id: string | null }>();
   if (!tray) notFound();
+  // A reply to a tray someone in the shop sent: name the client for the salesperson who sent it.
+  const { data: sentTray } = tray.share_id
+    ? await supabase.from("shares").select("client:clients(name)").eq("id", tray.share_id).maybeSingle<{ client: { name: string } | null }>()
+    : { data: null };
   const { data: rows } = await supabase
     .from("pieces")
     .select("id, sku, name, category, karat, gross_g, stone_g, making_per_g, making_flat, extras_aed, status, sold_via, piece_media(type, thumb_path, created_at)")
@@ -50,7 +54,9 @@ export default async function TrayPage({ params }: { params: Promise<{ id: strin
           <IconBack size={18} className="rtl:rotate-180" /> {t("trays.title")}
         </Link>
         <div className="text-center">
-          <p className="eyebrow">{t(tray.channel === "whatsapp" ? "trays.viaWhatsApp" : "trays.viaShop")}</p>
+          <p className="eyebrow">
+            {tray.share_id ? (sentTray?.client?.name ? t("trays.replyFrom", { name: sentTray.client.name }) : t("trays.replyToSent")) : t("trays.fromWebsite")} · {t(tray.channel === "whatsapp" ? "trays.viaWhatsApp" : "trays.viaShop")}
+          </p>
           <h1 dir="ltr" className="num mt-2 font-display text-[2.8rem] leading-none tracking-[0.16em]">{tray.code}</h1>
           <p className="mt-3 text-sm text-muted">
             {t("trays.created", { time: formatDubaiDateTime(tray.created_at, locale) })}

@@ -14,7 +14,7 @@ import { IMAGE_MAX, renderCatalogueImage, shareOrDownload } from "@/lib/share-im
 import { formatDubaiDateTime } from "@/lib/format";
 import { btn, btnLink, btnPrimary, errorText, hint, input, label } from "@/components/ui";
 import { createShare, saveClient, writeWithAi } from "./actions";
-import { IconChat, IconImage, IconLink, IconSparkles, IconX } from "@/components/icons";
+import { IconChat, IconImage, IconSparkles, IconTray, IconX } from "@/components/icons";
 import { EmptyState } from "@/components/EmptyState";
 
 const ERR: Record<string, MessageKey> = {
@@ -125,6 +125,7 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
   const [createErr, setCreateErr] = useState<MessageKey | null>(null);
   const [creating, startCreate] = useTransition();
   const [copied, setCopied] = useState(false);
+  const [days, setDays] = useState<1 | 7 | 30>(7);
   const [img, setImg] = useState<{ busy: boolean; msg: MessageKey | null }>({ busy: false, msg: null });
   const first = useRef(true);
 
@@ -160,7 +161,7 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
   function create() {
     setCreateErr(null);
     startCreate(async () => {
-      const r = await createShare({ shopId: props.shopId, pieceIds: items.map((i) => i.id), clientId, message, aiMessage: source === "ai" });
+      const r = await createShare({ shopId: props.shopId, pieceIds: items.map((i) => i.id), clientId, message, aiMessage: source === "ai", days });
       if (r.ok) setCreated({ url: r.url, expiresAt: r.expiresAt });
       else setCreateErr(r.error === "auth" ? "ai.err_auth" : "share.failed");
     });
@@ -313,9 +314,25 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
           {t("share.send")}
         </h2>
         {!created ? (
-          <button type="button" className={btnPrimary + " w-full min-h-12"} disabled={creating} onClick={create}>
-            <IconLink size={18} /> {creating ? t("share.creating") : t("share.createLink")}
-          </button>
+          <>
+            <fieldset>
+              <legend className="mb-2 text-sm font-semibold">{t("share.expiry")}</legend>
+              <div className="flex gap-0.5 rounded-[2px] border border-line p-0.5">
+                {([1, 7, 30] as const).map((d) => (
+                  <label key={d} className="relative flex-1">
+                    <input type="radio" name="sh-days" className="peer sr-only" checked={days === d} onChange={() => setDays(d)} />
+                    <span className="flex min-h-10 cursor-pointer items-center justify-center rounded-[1px] px-3 text-[14px] font-medium text-muted transition-colors hover:text-ink peer-checked:bg-ink peer-checked:text-paper peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]">
+                      {t(d === 1 ? "share.days1" : "share.daysN", { count: d })}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <p className={hint}>{t("share.expiryHint")}</p>
+            </fieldset>
+            <button type="button" className={btnPrimary + " w-full min-h-12"} disabled={creating} onClick={create}>
+              <IconTray size={18} /> {creating ? t("share.creating") : t("share.createLink")}
+            </button>
+          </>
         ) : (
           <div className="pop-in space-y-3">
             <p role="status" className="flex items-center gap-2 text-sm font-medium text-live">

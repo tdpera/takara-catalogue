@@ -28,7 +28,7 @@ export default async function SiteTray({ params }: { params: Promise<{ slug: str
       {cards.length === 0 ? (
         <div className="space-y-4 rounded-[2px] border border-dashed border-line px-5 py-12 text-center">
           <p className="text-muted">{t("site.trayEmpty")}</p>
-          <a href={`${base}/collection`} className="caps inline-flex min-h-11 items-center rounded-[2px] bg-primary px-5 text-[12.5px] font-semibold text-on-primary">{t("site.browse")}</a>
+          <a href={`${base}/#showcase`} className="caps inline-flex min-h-11 items-center rounded-[2px] bg-primary px-5 text-[12.5px] font-semibold text-on-primary">{t("site.browse")}</a>
         </div>
       ) : (
         <>

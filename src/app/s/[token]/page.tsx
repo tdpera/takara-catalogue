@@ -1,13 +1,14 @@
 /**
- * Public share page: /s/{token}. No login. Shows the chosen pieces with spins and today's
- * prices, in the client's language. Reads only through get_share(token); the service role is
- * used just to sign the images that call returned.
+ * A Digital tray the shop sent: /s/{token}. No login. The chosen pieces with spins and today's
+ * prices, in the client's language, each carrying the shop's name faintly across its photo. The
+ * customer ticks the pieces they'd like to see and sends the choice back on WhatsApp or shows a
+ * code in the shop. Reads only through get_share(token), which only the server may call (it
+ * returns making charges for pricing; they're never sent to the browser).
  */
 import type { Metadata } from "next";
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { supabaseServer } from "@/lib/supabase/server";
-import { mediaSigner } from "@/lib/supabase/admin";
+import { mediaSigner, siteDb } from "@/lib/supabase/admin";
 import { toRateMap, type Karat, type Rate } from "@/lib/pricing";
 import { oldestShownRate, publicPrice } from "@/lib/public-price";
 import { formatDubaiDateTime, formatGrams } from "@/lib/format";
@@ -15,6 +16,7 @@ import { priceNote } from "@/lib/share-message";
 import { dirFor, isLocale, LOCALE_NAMES, LOCALES, makeT, type Locale, type MessageKey } from "@/i18n";
 import { I18nProvider } from "@/i18n/client";
 import { PublicSpin, ViewBeacon } from "./parts";
+import { ChooseBar, ChooserProvider, ChooseToggle, Watermark } from "./chooser";
 import { Logo } from "@/components/icons";
 import { Odometer } from "@/components/Odometer";
 import { TiltTile } from "@/components/TiltTile";
@@ -22,7 +24,7 @@ import { TiltTile } from "@/components/TiltTile";
 export const dynamic = "force-dynamic";
 
 type SharedPiece = {
-  id: string; name: string; category: string; karat: Karat; gross_g: number; stone_g: number; making_per_g: number;
+  id: string; sku: string; name: string; category: string; karat: Karat; gross_g: number; stone_g: number; making_per_g: number;
   making_flat: number | null; extras_aed: number; status: "in_stock" | "reserved" | "sold";
   descriptions: Partial<Record<Locale, string>>;
   photo: { path: string; thumb: string | null } | null;
@@ -30,14 +32,11 @@ type SharedPiece = {
 };
 type Shared =
   | { status: "expired"; shop: string }
-  | { status: "ok"; shop: string; vat_enabled: boolean; expires_at: string; language: Locale; rates: Rate[]; pieces: SharedPiece[] };
+  | { status: "ok"; shop: string; logo: string | null; reply_to: string | null; vat_enabled: boolean; expires_at: string; language: Locale; rates: Rate[]; pieces: SharedPiece[] };
 
 const load = cache(async (token: string): Promise<Shared | null> => {
   if (!/^[A-Za-z0-9_-]{22}$/.test(token)) return null;
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase.rpc("get_share", { p_token: token });
-  if (error) throw error;
-  return (data as Shared | null) ?? null;
+  return siteDb().rpc<Shared>("get_share", { p_token: token });
 });
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
@@ -71,7 +70,11 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
 
   const rates = toRateMap(share.rates);
   const paths = share.pieces.flatMap((p) => [p.photo?.path, p.photo?.thumb, p.spin?.path].filter((x): x is string => !!x));
-  const urls = await mediaSigner().sign(paths, 24 * 3600);
+  const [urls, logos] = await Promise.all([
+    mediaSigner().sign(paths, 24 * 3600),
+    share.logo ? mediaSigner("branding").sign([share.logo], 24 * 3600) : Promise.resolve(new Map<string, string>()),
+  ]);
+  const logo = share.logo ? logos.get(share.logo) ?? null : null;
   // Today's price, labelled indicative on 1-3 day old rates, hidden on older ones (DECISIONS §3).
   const prices = share.pieces.map((p) => publicPrice(p, rates, share.vat_enabled, "live"));
   const oldest = oldestShownRate(prices);
@@ -80,11 +83,17 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
   return (
     <I18nProvider locale={locale}>
       <ViewBeacon token={token} />
-      <div lang={locale} dir={dir} className="min-h-dvh bg-paper">
+      <ChooserProvider>
+      <div lang={locale} dir={dir} className="min-h-dvh bg-paper pb-28">
         {/* Black velvet, where gold glows: the shop's name in gold, the client's languages below. */}
         <header className="pub-hero relative overflow-hidden text-[#f3eee4]">
           <div className="relative mx-auto flex max-w-3xl flex-col items-center px-4 pt-14 pb-7 text-center">
-            <Logo size={38} draw className="text-[#d9b46a]" />
+            {logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logo} alt="" width={56} height={56} className="size-14 rounded-full object-cover ring-1 ring-[#c9a35b]/60" />
+            ) : (
+              <Logo size={38} draw className="text-[#d9b46a]" />
+            )}
             <h1 className="eyebrow mt-5 stagger text-[#c9a35b]!" style={{ "--i": 1 } as React.CSSProperties}>{t("pub.title")}</h1>
             <p className="wordmark mt-3 font-display text-[1.9rem] leading-[1.2] font-medium [overflow-wrap:anywhere] stagger" style={{ "--i": 2 } as React.CSSProperties}>
               <span className="gold-text">{share.shop}</span>
@@ -111,6 +120,7 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
         </header>
 
         <main id="main" className="mx-auto max-w-5xl space-y-8 px-4 pt-2 pb-10">
+          <p className="mx-auto max-w-xl pt-4 text-center text-[15px]">{t("pub.howTo")}</p>
           <p className="mx-auto max-w-xl border-y border-line py-3 text-center text-sm text-muted">
             {priceNote(locale, share.vat_enabled)}
             {oldest && <> {t(indicative ? "pub.indicativeAt" : "pub.rateAt", { time: formatDubaiDateTime(oldest, locale) })}</>}
@@ -124,20 +134,23 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
               const desc = p.descriptions?.[locale] ?? p.descriptions?.en;
               return (
                 <li key={p.id} style={{ "--i": i } as React.CSSProperties} className={i < 3 ? "stagger" : "reveal-scroll"}>
-                  {spin && p.spin ? (
-                    <PublicSpin name={p.name} src={spin} frames={p.spin.frames} cols={p.spin.cols} poster={poster} />
-                  ) : photo ? (
-                    <TiltTile className="relative aspect-square overflow-hidden bg-tile">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photo} alt={t("piece.photoAlt", { name: p.name })} width={1600} height={1600} loading="lazy" className="img-in tile-img size-full object-cover" />
-                    </TiltTile>
-                  ) : (
-                    <div className="aspect-square bg-tile" />
-                  )}
+                  <div data-protect className="relative select-none [-webkit-touch-callout:none]">
+                    {spin && p.spin ? (
+                      <PublicSpin name={p.name} src={spin} frames={p.spin.frames} cols={p.spin.cols} poster={poster} />
+                    ) : photo ? (
+                      <TiltTile className="relative aspect-square overflow-hidden bg-tile">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={photo} alt={t("piece.photoAlt", { name: p.name })} width={1600} height={1600} loading="lazy" draggable={false} className="img-in tile-img size-full object-cover" />
+                      </TiltTile>
+                    ) : (
+                      <div className="aspect-square bg-tile" />
+                    )}
+                    <Watermark text={share.shop} />
+                  </div>
                   <div className="space-y-1.5 pt-4">
                     <h2 className="font-display text-[1.5rem] leading-tight [overflow-wrap:anywhere]">{p.name}</h2>
                     <p className="text-[12px] font-medium tracking-[0.06em] text-muted">
-                      <span dir="ltr" className="num font-medium">{p.karat}K · {formatGrams(p.gross_g)}</span> · {t(`categories.${p.category}` as MessageKey)}
+                      <span dir="ltr" className="num font-medium">{p.karat}K · {formatGrams(p.gross_g)} · {p.sku}</span> · {t(`categories.${p.category}` as MessageKey)}
                     </p>
                     {pr.kind === "sold" ? (
                       <p className="pt-1 font-semibold text-muted">{t("pub.sold")}</p>
@@ -162,6 +175,7 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
                         {desc}
                       </p>
                     )}
+                    {p.status !== "sold" && <ChooseToggle id={p.id} name={p.name} />}
                   </div>
                 </li>
               );
@@ -173,6 +187,8 @@ export default async function SharedPage({ params, searchParams }: { params: Pro
           </p>
         </main>
       </div>
+      <ChooseBar token={token} lang={locale} canWhatsApp={!!share.reply_to} />
+      </ChooserProvider>
     </I18nProvider>
   );
 }

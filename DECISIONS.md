@@ -610,3 +610,39 @@ from trays: staff bring out a few, customers sift through them, then compare sho
 - **Not done yet** (next phases in the plan): studio photo clean-up, detailed gold attributes
   (chain style, hollow/solid, finish), bulk import, plans and billing, own domains per shop
   through the Vercel API, gold-rate suggestions, the KYC module and the cross-shop directory.
+
+## 26. Digital trays and a showcase-only website
+Feedback: customers shouldn't be able to see a shop's whole catalogue, because others could copy
+its designs. Shops should send customers a tray of chosen pieces instead.
+- **The Digital tray is what the shop sends.** Shares became trays: select pieces in the
+  catalogue, tap **Send tray**, pick a client, and send it on WhatsApp (the salesperson presses
+  send). The link lasts 1, 7 (default) or 30 days, can be turned off, isn't indexed, and holds at
+  most 24 pieces. Each photo carries the shop's name faintly across it; long-press and right-click
+  on photos are off. Screenshots can't be stopped, so the watermark is what makes a copied photo
+  traceable.
+- **Customers answer with what they'd like to see.** On the tray they tick pieces, then either
+  **send their choice** (WhatsApp opens with the pieces, codes and a 6-character code written, to
+  the shop's website number or else the salesperson who sent it) or **show it in the shop** (the
+  code and a QR that opens it in the staff app). The choice is a `site_trays` row linked to the
+  sent tray (`share_id`), so the Trays tab shows "Fatima's choice from your tray" next to choices
+  made from the website. The same choice sent twice keeps its code.
+- **The Trays tab is both ways:** code entry, customers' choices, and the trays you sent (with
+  when each was opened). Phones: Catalogue, Trays, Add, Clients, Shop. `/shares` redirects here.
+- **The website is a shop window.** It shows the shop's introduction, "Ask for a tray"
+  (WhatsApp with the request written), how a tray works, how to visit, and at most **12 showcase
+  pieces** the owner picks (none by default, enforced in the database). The full collection and
+  its filters are gone; `/collection` goes to the showcase. Pieces outside the showcase have no
+  page and their images aren't served.
+- **get_share and create_tray_from_share are server-only now,** like the website functions:
+  they return making charges for pricing, which must never reach anyone outside the shop.
+- **The demo account.** The sign-in page shows the demo number and code (050 000 0001, 123456,
+  a Supabase test number), with buttons that fill them in; set `NEXT_PUBLIC_DEMO_LOGIN=off` to
+  hide it. Signed in as the demo account, **Load the demo shop** (welcome page, empty catalogue,
+  Shop page) builds it on the server in about 10-20 s: 10 pieces with drawn "DEMO" pictures,
+  rates, a client and a tray sent to her with her answer, a website with 5 showcase pieces,
+  visits, trays and a sale. The same module (scripts/demo-shop.mjs) is what `pnpm seed` uses.
+  The demo account never gets Takara admin rights; anyone can open it.
+- **"The database needs an update" instead of an error.** The app asks `schema_version()` once
+  per server start. If a migration hasn't been run, every page shows which file in
+  `supabase/updates/` to paste into the Supabase SQL Editor (all updates, or only the latest,
+  worked out from what the database has), and recovers by itself once it's run.

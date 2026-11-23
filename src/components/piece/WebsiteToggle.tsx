@@ -1,14 +1,15 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useT } from "@/i18n/client";
+import type { MessageKey } from "@/i18n";
 import { setOnWebsite } from "@/app/website/actions";
 import { IconGlobe } from "@/components/icons";
 
-/** Whether this piece shows on the shop's website (owners and managers can change it). */
+/** Whether this piece is in the website's showcase (owners and managers can change it; at most 12). */
 export function WebsiteToggle({ pieceId, on, canChange, url }: { pieceId: string; on: boolean; canChange: boolean; url: string | null }) {
   const { t } = useT();
   const [value, setValue] = useState(on);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<MessageKey | null>(null);
   const [pending, start] = useTransition();
   return (
     <div className="space-y-2">
@@ -28,10 +29,10 @@ export function WebsiteToggle({ pieceId, on, canChange, url }: { pieceId: string
             onChange={(e) => {
               const next = e.target.checked;
               setValue(next);
-              setFailed(false);
+              setFailed(null);
               start(async () => {
                 const r = await setOnWebsite([pieceId], next);
-                if ("error" in r) { setValue(!next); setFailed(true); }
+                if ("error" in r) { setValue(!next); setFailed(r.error); }
               });
             }}
             className="size-5 accent-[var(--ink)]"
@@ -39,7 +40,7 @@ export function WebsiteToggle({ pieceId, on, canChange, url }: { pieceId: string
         )}
       </label>
       {url && value && <a href={url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-sm font-semibold text-gold hover:underline">{t("website.viewOnWebsite")}</a>}
-      {failed && <p role="alert" className="text-sm text-danger">{t("common.error")}</p>}
+      {failed && <p role="alert" className="text-sm text-danger">{t(failed)}</p>}
     </div>
   );
 }

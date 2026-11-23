@@ -5,6 +5,7 @@ import { useT } from "@/i18n/client";
 import type { MessageKey } from "@/i18n";
 import { btnLink, btnPrimary, errorText, hint, input, label } from "@/components/ui";
 import { sendCode, verifyCode } from "./actions";
+import { DEMO_CODE, demoEnabled, demoLocal, isDemoPhone } from "@/lib/demo";
 
 type Channel = "whatsapp" | "sms";
 type Sent = { phone: string; display: string; channel: Channel };
@@ -85,6 +86,18 @@ export function LoginForm() {
         <button type="button" className={btnLink} disabled={busy || !raw.trim()} onClick={() => void send("sms")}>
           {t("login.sendSms")}
         </button>
+        {demoEnabled() && (
+          <div className="rounded-[2px] border border-gold-line/60 bg-gold-soft/60 p-3.5 text-[14.5px]">
+            <p>
+              {t("demo.loginHint")}{" "}
+              <span dir="ltr" className="num font-semibold whitespace-nowrap">{demoLocal()}</span> · {t("demo.code")}{" "}
+              <span dir="ltr" className="num font-semibold">{DEMO_CODE}</span>
+            </p>
+            <button type="button" className={btnLink + " min-h-10"} onClick={() => { setRaw(demoLocal()); setError(null); }}>
+              {t("demo.useNumber")}
+            </button>
+          </div>
+        )}
       </form>
     );
   }
@@ -111,6 +124,11 @@ export function LoginForm() {
           required
         />
       </div>
+      {isDemoPhone(sent.phone) && code !== DEMO_CODE && (
+        <button type="button" className={btnLink + " min-h-10"} onClick={() => setCode(DEMO_CODE)}>
+          {t("demo.useCode", { code: DEMO_CODE })}
+        </button>
+      )}
       {error && <p role="alert" className={errorText}>{t(error)}</p>}
       <button className={btnPrimary + " w-full"} disabled={busy || code.length !== 6}>{t("login.verify")}</button>
       <div className="flex flex-wrap gap-x-6">

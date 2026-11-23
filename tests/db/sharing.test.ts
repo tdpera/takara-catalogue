@@ -38,10 +38,16 @@ afterAll(async () => {
   await deleteUsers([owner, sales, other]);
 });
 
-describe("get_share (public)", () => {
+describe("get_share (the server, for the public tray page)", () => {
+  it("visitors can't call it directly: it returns making charges for pricing", async () => {
+    const s = await share(sales, [p1]);
+    expect((await anonClient().rpc("get_share", { p_token: s.public_token })).error).not.toBeNull();
+    expect((await sales.db.rpc("get_share", { p_token: s.public_token })).error).not.toBeNull();
+  });
+
   it("shows a valid share's pieces, in the chosen order, in the client's language", async () => {
     const s = await share(sales, [p2, p1], { client_id: clientId });
-    const data = ok(await anonClient().rpc("get_share", { p_token: s.public_token })) as Record<string, unknown> & { pieces: { name: string }[] };
+    const data = ok(await adminClient().rpc("get_share", { p_token: s.public_token })) as Record<string, unknown> & { pieces: { name: string }[] };
     expect(data.status).toBe("ok");
     expect(data.shop).toBe("Share Shop");
     expect(data.language).toBe("ar");
@@ -51,19 +57,19 @@ describe("get_share (public)", () => {
 
   it("reveals nothing about the client, the salesperson or the message", async () => {
     const s = await share(sales, [p1], { client_id: clientId });
-    const json = JSON.stringify(ok(await anonClient().rpc("get_share", { p_token: s.public_token })));
+    const json = JSON.stringify(ok(await adminClient().rpc("get_share", { p_token: s.public_token })));
     for (const secret of ["Fatima", "+971501234567", "Likes light", sales.id, clientId, "Hello", s.id]) expect(json).not.toContain(secret);
   });
 
   it("returns nothing for unknown tokens and only 'expired' for revoked or expired links", async () => {
-    expect(ok(await anonClient().rpc("get_share", { p_token: "x".repeat(22) }))).toBeNull();
-    expect(ok(await anonClient().rpc("get_share", { p_token: "short" }))).toBeNull();
+    expect(ok(await adminClient().rpc("get_share", { p_token: "x".repeat(22) }))).toBeNull();
+    expect(ok(await adminClient().rpc("get_share", { p_token: "short" }))).toBeNull();
     const a = await share(sales, [p1]);
     ok(await sales.db.from("shares").update({ revoked_at: new Date().toISOString() }).eq("id", a.id));
-    expect(ok(await anonClient().rpc("get_share", { p_token: a.public_token }))).toEqual({ status: "expired", shop: "Share Shop" });
+    expect(ok(await adminClient().rpc("get_share", { p_token: a.public_token }))).toEqual({ status: "expired", shop: "Share Shop" });
     const b = await share(sales, [p1]);
-    ok(await adminClient().from("shares").update({ expires_at: new Date(Date.now() - 1000).toISOString() }).eq("id", b.id));
-    expect(ok(await anonClient().rpc("get_share", { p_token: b.public_token }))).toEqual({ status: "expired", shop: "Share Shop" });
+    ok(await adminClient().from("shares").update({ created_at: new Date(Date.now() - 2 * 86400_000).toISOString(), expires_at: new Date(Date.now() - 1000).toISOString() }).eq("id", b.id));
+    expect(ok(await adminClient().rpc("get_share", { p_token: b.public_token }))).toEqual({ status: "expired", shop: "Share Shop" });
   });
 
   it("expires after 7 days by default", async () => {

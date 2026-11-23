@@ -27,7 +27,8 @@ beforeAll(async () => {
   hidden = await addPiece(owner, shop, "Hidden ring");
   otherPiece = await addPiece(other, otherShop, "Not yours");
   ok(await owner.db.from("shop_sites").insert({ shop_id: shop, slug, published: true }));
-  ok(await owner.db.rpc("set_on_website", { p_shop: shop, p_pieces: [hidden], p_on: false }));
+  // Pieces start off the website; the owner puts a few in the showcase.
+  ok(await owner.db.rpc("set_on_website", { p_shop: shop, p_pieces: [p1, p2], p_on: true }));
   ok(await adminClient().from("platform_admins").insert({ user_id: takara.id }));
 });
 
@@ -49,7 +50,16 @@ describe("website settings", () => {
       expect(error, bad).not.toBeNull();
     }
   });
-  it("only owners and managers hide pieces from the website, only in their shop", async () => {
+  it("pieces start off the website; the showcase holds at most 12", async () => {
+    expect((ok(await owner.db.from("pieces").select("on_website").eq("id", hidden).single()) as { on_website: boolean }).on_website).toBe(false);
+    const more = await Promise.all(Array.from({ length: 11 }, (_, i) => addPiece(owner, shop, `Extra ${i}`)));
+    const full = await owner.db.rpc("set_on_website", { p_shop: shop, p_pieces: more, p_on: true });
+    expect(full.error?.message).toBe("showcase_full");
+    ok(await owner.db.rpc("set_on_website", { p_shop: shop, p_pieces: more.slice(0, 10), p_on: true }));
+    ok(await owner.db.rpc("set_on_website", { p_shop: shop, p_pieces: more.slice(0, 10), p_on: false }));
+    await adminClient().from("pieces").delete().in("id", more);
+  });
+  it("only owners and managers change the showcase, only in their shop", async () => {
     expect((await sales.db.rpc("set_on_website", { p_shop: shop, p_pieces: [p1], p_on: false })).error).not.toBeNull();
     expect(ok(await owner.db.rpc("set_on_website", { p_shop: shop, p_pieces: [otherPiece], p_on: false }))).toBe(0);
   });
@@ -101,6 +111,23 @@ describe("trays", () => {
   });
 });
 
+describe("answering a tray the shop sent", () => {
+  it("customers pick from that tray only; staff see it in Trays, linked to the tray", async () => {
+    const sent = ok(await sales.db.from("shares").insert({ shop_id: shop, salesperson_id: sales.id, piece_ids: [p2, hidden] }).select("id, public_token").single()) as { id: string; public_token: string };
+    expect((await anonClient().rpc("create_tray_from_share", { p_token: sent.public_token, p_piece_ids: [hidden], p_channel: "in_store", p_visitor: "c1" })).error).not.toBeNull();
+    const code = ok(await adminClient().rpc("create_tray_from_share", { p_token: sent.public_token, p_piece_ids: [hidden, p1, otherPiece], p_channel: "whatsapp", p_visitor: "c1" })) as string;
+    expect(code).toMatch(/^[A-HJKMNP-Z2-9]{6}$/);
+    const tray = ok(await owner.db.from("site_trays").select("piece_ids, share_id, channel").eq("code", code).single()) as { piece_ids: string[]; share_id: string; channel: string };
+    expect(tray).toEqual({ piece_ids: [hidden], share_id: sent.id, channel: "whatsapp" });
+    ok(await sales.db.from("shares").update({ revoked_at: new Date().toISOString() }).eq("id", sent.id));
+    expect(ok(await adminClient().rpc("create_tray_from_share", { p_token: sent.public_token, p_piece_ids: [p2], p_channel: "in_store", p_visitor: "c2" }))).toBeNull();
+  });
+  it("links last 1 to 30 days", async () => {
+    const tooLong = await sales.db.from("shares").insert({ shop_id: shop, salesperson_id: sales.id, piece_ids: [p2], expires_at: new Date(Date.now() + 40 * 86400_000).toISOString() });
+    expect(tooLong.error).not.toBeNull();
+  });
+});
+
 describe("events, reports and the Takara dashboard", () => {
   it("the app can't log sales or trays itself", async () => {
     const { error } = await owner.db.from("events").insert({ shop_id: shop, user_id: owner.id, name: "piece_sold", props: {} });
@@ -108,7 +135,7 @@ describe("events, reports and the Takara dashboard", () => {
   });
   it("owners see their monthly report; salespeople and other shops don't", async () => {
     const r = ok(await owner.db.rpc("shop_report", { p_shop: shop })) as { current: { trays: number }; site: { slug: string } };
-    expect(r.current.trays).toBe(1);
+    expect(r.current.trays).toBe(2);
     expect(r.site.slug).toBe(slug);
     expect((await sales.db.rpc("shop_report", { p_shop: shop })).error).not.toBeNull();
     expect((await other.db.rpc("shop_report", { p_shop: shop })).error).not.toBeNull();

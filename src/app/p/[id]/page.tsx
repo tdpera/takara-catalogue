@@ -18,7 +18,7 @@ import { suggestSoldVia } from "@/lib/sold";
 import { siteAddress } from "@/lib/site-host";
 import { appOrigin } from "@/lib/site-origin";
 import { btn, btnPrimary, card } from "@/components/ui";
-import { IconShare } from "@/components/icons";
+import { IconTray } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Piece" };
 
@@ -72,7 +72,7 @@ export default async function PiecePage({ params }: { params: Promise<{ id: stri
             <div className="flex gap-2">
               {piece.status !== "sold" && (
                 <Link href={`/share?ids=${piece.id}`} className={btnPrimary + " flex-1"}>
-                  <IconShare size={18} /> {t("catalogue.share")}
+                  <IconTray size={18} /> {t("catalogue.share")}
                 </Link>
               )}
               {canEdit && (

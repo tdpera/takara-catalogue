@@ -101,13 +101,13 @@ export async function removeLogo(): Promise<{ ok: true } | { error: MessageKey }
   return { ok: true };
 }
 
-/** Show or hide pieces on the website (one or many, from the catalogue or a piece page). */
+/** Add pieces to, or take them off, the website's showcase (at most 12; one or many at once). */
 export async function setOnWebsite(ids: string[], on: boolean): Promise<{ ok: true; count: number } | { error: MessageKey }> {
   const { supabase, current, isAdmin } = await requireShop();
   if (!isAdmin) return { error: "common.notAllowed" };
   if (!Array.isArray(ids) || ids.length === 0 || ids.length > 500 || !ids.every((x) => z.uuid().safeParse(x).success)) return { error: "common.error" };
   const { data, error } = await supabase.rpc("set_on_website", { p_shop: current.shop_id, p_pieces: ids, p_on: !!on });
-  if (error) return { error: error.code === "42501" ? "common.notAllowed" : "common.error" };
+  if (error) return { error: error.message === "showcase_full" ? "website.showcaseFull" : error.code === "42501" ? "common.notAllowed" : "common.error" };
   revalidatePath("/");
   for (const id of ids.slice(0, 20)) revalidatePath(`/p/${id}`);
   return { ok: true, count: Number(data ?? 0) };

@@ -10,8 +10,7 @@ import { cookies, headers } from "next/headers";
 import { siteDb } from "./supabase/admin";
 import { toRateMap, type Karat, type Rate } from "./pricing";
 import { publicPrice, type PriceMode, type PublicPrice } from "./public-price";
-import { cleanQuery } from "./catalogue-filters";
-import { CATEGORIES, type Category, type Descriptions } from "./ai/shared";
+import type { Category, Descriptions } from "./ai/shared";
 import { isLocale, type Locale } from "@/i18n";
 import { isValidSlug } from "./site-host";
 
@@ -84,39 +83,6 @@ export type WeightBand = keyof typeof WEIGHT_BANDS;
 export const SITE_SORTS = ["newest", "heavy", "light"] as const;
 export type SiteSort = (typeof SITE_SORTS)[number];
 export type SiteFilters = { q: string; category: Category | null; karat: Karat | null; w: WeightBand | null; sort: SiteSort; n: number };
-
-const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
-
-export function parseSiteFilters(sp: Record<string, string | string[] | undefined>): SiteFilters {
-  const category = one(sp.category);
-  const karat = Number(one(sp.karat));
-  const w = one(sp.w);
-  const sort = one(sp.sort);
-  const n = Number(one(sp.n));
-  return {
-    q: cleanQuery(one(sp.q)),
-    category: (CATEGORIES as readonly string[]).includes(category) ? (category as Category) : null,
-    karat: [24, 22, 21, 18, 14].includes(karat) ? (karat as Karat) : null,
-    w: w in WEIGHT_BANDS ? (w as WeightBand) : null,
-    sort: (SITE_SORTS as readonly string[]).includes(sort) ? (sort as SiteSort) : "newest",
-    n: Number.isInteger(n) && n > SITE_PAGE ? Math.min(480, Math.ceil(n / SITE_PAGE) * SITE_PAGE) : SITE_PAGE,
-  };
-}
-
-/** The collection page's URL with some filters changed. Defaults are left out. */
-export function siteFilterHref(base: string, f: SiteFilters, change: Partial<SiteFilters>): string {
-  const next = { ...f, ...change };
-  if (!("n" in change)) next.n = SITE_PAGE;
-  const sp = new URLSearchParams();
-  if (next.q) sp.set("q", next.q);
-  if (next.category) sp.set("category", next.category);
-  if (next.karat) sp.set("karat", String(next.karat));
-  if (next.w) sp.set("w", next.w);
-  if (next.sort !== "newest") sp.set("sort", next.sort);
-  if (next.n > SITE_PAGE) sp.set("n", String(next.n));
-  const s = sp.toString();
-  return `${base}/collection${s ? `?${s}` : ""}`;
-}
 
 export async function listSiteCards(slug: string, f: SiteFilters, limit = f.n): Promise<{ cards: SiteCard[]; total: number }> {
   const site = await getSite(slug);

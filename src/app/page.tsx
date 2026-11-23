@@ -9,9 +9,14 @@ import { Grid } from "@/components/catalogue/Grid";
 import { btn, btnGold, btnLink } from "@/components/ui";
 import { EmptyState } from "@/components/EmptyState";
 import { IconPlus } from "@/components/icons";
+import { DemoButton } from "@/components/DemoButton";
+import { isDemoPhone } from "@/lib/demo";
+
+// Loading the demo shop (demo account, empty catalogue) draws and uploads pictures (10-20 s).
+export const maxDuration = 60;
 
 export default async function CataloguePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const { supabase, memberships, current, isAdmin } = await requireShop();
+  const { supabase, user, memberships, current, isAdmin } = await requireShop();
   const { t } = await getT();
   const f = parseFilters(await searchParams);
   const [{ cards, total }, { data: site }] = await Promise.all([
@@ -40,9 +45,12 @@ export default async function CataloguePage({ searchParams }: { searchParams: Pr
             <EmptyState
               title={t("home.empty")}
               action={
-                <Link href="/add" className={btnGold + " mt-1 min-h-12 px-7"}>
-                  <IconPlus className="stroke-[2.4]" /> {t("home.addPiece")}
-                </Link>
+                <div className="space-y-3">
+                  <Link href="/add" className={btnGold + " mt-1 min-h-12 px-7"}>
+                    <IconPlus className="stroke-[2.4]" /> {t("home.addPiece")}
+                  </Link>
+                  {isDemoPhone(user.phone) && <DemoButton />}
+                </div>
               }
             />
           )

@@ -18,16 +18,19 @@ are saved on the phone first and upload in the background.
 - **AI fill:** reads the scale display, purity stamp and design, writes a name and descriptions in
   4 languages, and highlights everything it filled for checking.
 - **Catalogue:** grid with spins, filters, search, a piece page with a price breakdown, editing.
-- **Sharing:** private links with live prices and view tracking, a 1080 px catalogue image, and a
-  WhatsApp button. Nothing is sent automatically.
-- **Shop websites:** each shop can publish its catalogue as a website for customers
-  (`<shop>.<your domain>`, or `/site/<shop>` before a domain is set up), in 4 languages, with
-  prices shown live, as "from" (gold value only) or not at all. Nothing is sold online: customers
-  collect pieces in a **tray** and send it to the shop on WhatsApp or show its code (and QR) in
-  the shop; staff open it in the **Trays** tab.
+- **Digital trays:** staff pick pieces and send a private tray on WhatsApp (live prices, 360°
+  spins, the shop's name across each photo, expiring after 1, 7 or 30 days). The customer ticks
+  what they'd like to see and sends their choice back or shows a code in the shop; staff open it
+  in the Trays tab. Also a 1080 px catalogue image. Nothing is sent automatically.
+- **Shop websites:** a shop window for customers (`<shop>.<your domain>`, or `/site/<shop>`
+  before a domain is set up), in 4 languages: introduction, "Ask for a tray", how to visit, and
+  at most 12 showcase pieces the owner picks. The rest of the catalogue stays private (designs can
+  be copied). Prices live, as "from" (gold value only) or not at all. Nothing is sold online.
 - **Sales and reports:** marking a piece sold asks how the customer found it (walk-in, website,
-  tray, WhatsApp link, returning client). Owners get a **monthly report**; Takara's own team gets
-  a **dashboard** of every shop (`/admin`). See DECISIONS.md 25.
+  tray code, tray we sent, returning client). Owners get a **monthly report**; Takara's own team
+  gets a **dashboard** of every shop (`/admin`). See DECISIONS.md 25-26.
+- **Demo:** sign in with 050 000 0001 and code 123456 (shown on the sign-in page) and tap
+  **Load the demo shop**.
 - **Design:** "Maison" (Bodoni Moda and Manrope on ivory, black velvet and gold). Signed-out
   visitors get an introduction page with a live 3D gold ring (WebGL, no library) and the app's
   story told as you scroll; photos fly between pages, prices roll into place. All motion is CSS
@@ -131,6 +134,8 @@ To try AI fill locally, add `ANTHROPIC_API_KEY` to `.env.local` and restart `pnp
 | `NEXT_PUBLIC_SITE_URL` | The app's address, used in share links and tray QR codes, e.g. `https://app.takara.ae` | Yes in production |
 | `NEXT_PUBLIC_SITE_DOMAIN` | The domain shop websites live under, e.g. `takara.ae` gives `alnoor.takara.ae`. Leave unset until the domain is set up: websites then live at `<app>/site/<shop>`. | No |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Server only.** Signs images for the public share page, reads shop websites (their database functions return making charges, so only the server may call them); used by `pnpm seed`. Never expose it. | Yes, for share links and websites |
+| `NEXT_PUBLIC_DEMO_LOGIN` | `off` hides the demo number and code on the sign-in page and the "Load the demo shop" button. | No |
+| `NEXT_PUBLIC_DEMO_PHONE` | The demo account's number (a Supabase test number with code 123456). Default `+971500000001`. | No |
 | `ANTHROPIC_API_KEY` | **Server only.** AI fill and "Write with AI". Without it, those buttons say AI isn't set up. | No |
 | `ANTHROPIC_MODEL` | Claude model. Default `claude-opus-5-5`. | No |
 | `ANTHROPIC_EFFORT` | `low` (default), `medium`, `high`… Higher is slower and costs more. | No |
@@ -215,14 +220,17 @@ The SMS/WhatsApp provider for sign-in codes (Twilio) is configured in Supabase, 
 ### Updating
 
 New migrations in `supabase/migrations` are applied with `pnpm exec supabase db push`, before
-deploying the code that needs them. Without the CLI: open each new migration file, paste it into
-the dashboard's **SQL Editor** and run it, oldest first (each file runs once). When you change `public/sw.js` in a way that should drop old
+deploying the code that needs them. Without the CLI: paste the file from `supabase/updates/`
+that the app names into the dashboard's **SQL Editor** and press Run. If the code is deployed
+before the database is updated, every page says exactly which file to paste (instead of an
+error) and recovers by itself once it's run. When you change `public/sw.js` in a way that should drop old
 caches, bump its `VERSION`.
 
 ### Shop websites, trays and the Takara dashboard
 
-1. **Database:** apply `supabase/migrations/20261124000100_websites_trays_reports.sql` (see
-   Updating), then deploy the code.
+1. **Database:** paste `supabase/updates/update-websites-and-trays.sql` into the SQL Editor and
+   run it (or `update-digital-trays.sql` if you already ran the websites update). The app tells
+   you which.
 2. **Make yourself a Takara admin** (for `/admin`). In the SQL Editor, with your number in
    international format without the `+`:
 
@@ -238,9 +246,10 @@ caches, bump its `VERSION`.
    (Vercel asks you to use its nameservers for wildcards). Then set `NEXT_PUBLIC_SITE_URL` to
    `https://app.takara.ae` and `NEXT_PUBLIC_SITE_DOMAIN` to `takara.ae`, and redeploy. Locally,
    `http://<address>.localhost:3000` works without any setup.
-5. **The demo ("mock") website** for pitching: `pnpm seed` publishes the demo shop at `demo`
-   (locally also with sample visits, trays and a sale, and a second quieter shop for the
-   dashboard). Replace its drawn "DEMO" pictures with real photos before showing it to shops.
+5. **The demo** for pitching and judging: in Supabase, Authentication → Sign In / Providers →
+   Phone, add the test number `971500000001` with code `123456` (once). Then sign in with
+   050 000 0001 / 123456 and tap **Load the demo shop**: catalogue, website at `/site/demo`,
+   trays and a report, ready in about 20 seconds. Its pictures are drawings marked "DEMO".
 
 ---
 

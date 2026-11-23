@@ -4,7 +4,7 @@ import { siteOrigin } from "@/lib/site-origin";
 
 export const dynamic = "force-dynamic";
 
-/** Sitemap for a shop website: home, collection, visit and every piece on show. */
+/** Sitemap for a shop website: home, visit and the showcase pieces. */
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const site = await getSite(slug);
@@ -13,7 +13,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   const pieces = (await siteDb().rpc<{ sku: string; updated_at: string }[]>("site_sitemap", { p_slug: slug })) ?? [];
   const urls = [
     { loc: origin + "/", lastmod: site.updated_at },
-    { loc: `${origin}/collection`, lastmod: pieces[0]?.updated_at ?? site.updated_at },
     { loc: `${origin}/visit`, lastmod: site.updated_at },
     ...pieces.map((p) => ({ loc: `${origin}/p/${p.sku}`, lastmod: p.updated_at })),
   ];

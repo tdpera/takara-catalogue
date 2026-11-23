@@ -11,7 +11,7 @@ export default async function SiteNotFound() {
   return (
     <main id="main" className="mx-auto max-w-xl space-y-4 px-4 py-20 text-center">
       <h1 className="font-display text-[2rem] leading-tight">{t("site.notFound")}</h1>
-      <a href={`${base}/collection`} className="caps inline-flex min-h-11 items-center rounded-[2px] bg-primary px-5 text-[12.5px] font-semibold text-on-primary">
+      <a href={`${base}/#showcase`} className="caps inline-flex min-h-11 items-center rounded-[2px] bg-primary px-5 text-[12.5px] font-semibold text-on-primary">
         {t("site.browse")}
       </a>
     </main>

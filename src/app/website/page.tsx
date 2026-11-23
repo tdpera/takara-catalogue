@@ -23,10 +23,10 @@ export default async function WebsitePage() {
   const { supabase, memberships, current, isAdmin } = await requireShop();
   if (!isAdmin) redirect("/shop");
   const { t } = await getT();
-  const [{ data: site }, { data: shop }, { count: hidden }] = await Promise.all([
+  const [{ data: site }, { data: shop }, { count: showcased }] = await Promise.all([
     supabase.from("shop_sites").select("slug, published, price_mode, whatsapp, address, maps_url, hours, instagram, about").eq("shop_id", current.shop_id).maybeSingle<SiteRow>(),
     supabase.from("shops").select("logo_path").eq("id", current.shop_id).single<{ logo_path: string | null }>(),
-    supabase.from("pieces").select("id", { count: "exact", head: true }).eq("shop_id", current.shop_id).eq("on_website", false),
+    supabase.from("pieces").select("id", { count: "exact", head: true }).eq("shop_id", current.shop_id).eq("on_website", true).neq("status", "sold"),
   ]);
   let logoUrl: string | null = null;
   if (shop?.logo_path) {
@@ -55,7 +55,7 @@ export default async function WebsitePage() {
                 {address.replace(/^https?:\/\//, "")}
               </a>
               <p className="mt-2 text-sm text-muted">{t("website.qrHint")}</p>
-              {!!hidden && <p className="mt-2 text-sm text-muted">{t("website.hiddenCount", { count: hidden })}</p>}
+              <p className="mt-2 text-sm text-muted">{t("website.showcaseCount", { count: showcased ?? 0 })}</p>
             </div>
             {qr && (
               // Our own server drew this QR code (it holds the website's address).

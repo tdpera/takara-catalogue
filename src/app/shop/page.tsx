@@ -6,9 +6,13 @@ import { getT } from "@/i18n/server";
 import { siteAddress } from "@/lib/site-host";
 import { AppHeader } from "@/components/AppHeader";
 import { SignOutButton } from "@/components/SignOutButton";
+import { DemoButton } from "@/components/DemoButton";
+import { isDemoPhone } from "@/lib/demo";
 import { IconChart, IconChevron, IconCoins, IconGlobe, IconUsers, Logo } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Shop" };
+// Loading the demo shop draws and uploads its pictures (10-20 s).
+export const maxDuration = 60;
 
 /** Everything about running the shop: rates, website, monthly report, team. */
 export default async function ShopPage() {
@@ -58,6 +62,13 @@ export default async function ShopPage() {
             </li>
           ))}
         </ul>
+        {isDemoPhone(user.phone) && (
+          <section className="space-y-2 rounded-[2px] border border-gold-line/60 bg-gold-soft/50 p-4">
+            <h2 className="font-display text-xl">{t("demo.title")}</h2>
+            <p className="text-[15px] text-muted">{t("demo.reloadIntro")}</p>
+            <DemoButton label="demo.reload" />
+          </section>
+        )}
         <SignOutButton userId={user.id} />
       </main>
     </>

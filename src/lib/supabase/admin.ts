@@ -1,10 +1,11 @@
 import "server-only";
 /**
- * Service-role client. Used for exactly two things, both for visitors with no login:
- * - signing image URLs for the public share page (what to sign comes from get_share(token));
- * - shop websites: calling the website functions (get_site, list_site_pieces, create_tray...),
- *   which only the service role may call because they return making charges for pricing, and
- *   reading the images those functions allow (site_media_bucket).
+ * Service-role client. Used for exactly three things:
+ * - Digital trays (share links) and shop websites, for visitors with no login: calling the
+ *   functions only the server may call because they return making charges for pricing
+ *   (get_share, create_tray_from_share, get_site, list_site_pieces, create_tray...), signing the
+ *   images get_share returned, and reading the images site_media_bucket allows;
+ * - loading the demo shop for the demo account (lib/demo.ts), which writes demo rows and files.
  * Never use this for anything else.
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -19,19 +20,21 @@ function client(): SupabaseClient {
   return admin;
 }
 
-export function mediaSigner() {
+export function mediaSigner(bucket: "media" | "branding" = "media") {
   return {
     async sign(paths: string[], ttlS: number): Promise<Map<string, string>> {
       const list = [...new Set(paths.filter(Boolean))];
       if (list.length === 0) return new Map();
-      const { data, error } = await client().storage.from("media").createSignedUrls(list, ttlS);
+      const { data, error } = await client().storage.from(bucket).createSignedUrls(list, ttlS);
       if (error) throw error;
       return new Map((data ?? []).flatMap((d) => (d.path && d.signedUrl ? [[d.path, d.signedUrl] as const] : [])));
     },
   };
 }
 
-type SiteFn = "get_site" | "list_site_pieces" | "get_site_piece" | "site_pieces" | "site_sitemap" | "site_media_bucket" | "create_tray" | "get_tray" | "record_site_view";
+type SiteFn =
+  | "get_site" | "list_site_pieces" | "get_site_piece" | "site_pieces" | "site_sitemap" | "site_media_bucket"
+  | "create_tray" | "get_tray" | "record_site_view" | "get_share" | "create_tray_from_share";
 
 /** Website functions and the files they allow. Server only (see above). */
 export function siteDb() {
@@ -47,4 +50,9 @@ export function siteDb() {
       return data;
     },
   };
+}
+
+/** The demo loader only (see lib/demo.ts). */
+export function demoDb(): SupabaseClient {
+  return client();
 }

@@ -9,14 +9,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useT } from "@/i18n/client";
 import type { MessageKey } from "@/i18n";
-import { IconCoins, IconGrid, IconPlus, IconSend, IconStore, IconTray } from "./icons";
+import { IconCoins, IconGrid, IconPlus, IconStore, IconTray, IconUsers } from "./icons";
 
 // Wider screens show every section; phones keep four tabs and the Add button, with gold rates
 // inside Shop (today's rates are on every screen anyway, under the header).
 const TABS = [
   { href: "/", key: "nav.catalogue", Icon: IconGrid },
-  { href: "/shares", key: "nav.shares", Icon: IconSend },
   { href: "/trays", key: "nav.trays", Icon: IconTray },
+  { href: "/clients", key: "nav.clients", Icon: IconUsers },
   { href: "/rates", key: "nav.rates", Icon: IconCoins },
   { href: "/shop", key: "nav.shop", Icon: IconStore },
 ] as const satisfies readonly { href: string; key: MessageKey; Icon: unknown }[];
@@ -26,7 +26,7 @@ const SHOP_PAGES = ["/shop", "/team", "/website", "/report"];
 function isActive(href: string, path: string, phone = false) {
   const under = (x: string) => path === x || path.startsWith(x + "/");
   if (href === "/") return path === "/" || path.startsWith("/p/");
-  if (href === "/shares") return ["/shares", "/share", "/clients"].some(under);
+  if (href === "/trays") return ["/trays", "/share", "/shares"].some(under);
   if (href === "/shop") return SHOP_PAGES.some(under) || (phone && under("/rates"));
   return under(href);
 }

@@ -70,9 +70,9 @@ async function capture(p, { karat, category, weight, video, name }) {
   const bangleCatalogue = await cardPrice('Rope bangle');
   const earCatalogue = await cardPrice('Jhumka earrings');
   for (const nm of ['Rope bangle', 'Jhumka earrings', 'Box chain']) await p.getByRole('button', { name: new RegExp(`Select ${nm}`) }).click();
-  await p.getByRole('button', { name: 'Share' }).click();
+  await p.getByRole('button', { name: 'Send tray' }).click();
   await p.waitForURL(/\/share\?ids=/);
-  check('Share opens the composer with the selection', await visible(p.getByRole('heading', { name: 'Pieces (2)' })));
+  check('Send tray opens the composer with the selection', await visible(p.getByRole('heading', { name: 'Pieces (2)' })));
   check('sold pieces are left out, and it says so', await visible(p.getByText('Sold pieces left out: 1.')));
   const msg = () => p.locator('#sh-message').inputValue();
   let m = await msg();
@@ -113,8 +113,9 @@ async function capture(p, { karat, category, weight, video, name }) {
   scenario('ok');
 
   // Create link
-  await p.getByRole('button', { name: 'Create share link' }).click();
-  await p.getByText(/Link ready. It works until/).waitFor();
+  check('the link lasts 7 days unless the salesperson picks 1 or 30', (await p.getByRole('radio', { name: '7 days' }).isChecked()) && (await p.getByRole('radio', { name: '30 days' }).count()) === 1);
+  await p.getByRole('button', { name: 'Create the tray' }).click();
+  await p.getByText(/Tray ready. Its link works until/).waitFor();
   const link = await p.locator('#sh-link').inputValue();
   check('link is /s/ + 22-character token', /^http:\/\/localhost:3000\/s\/[A-Za-z0-9_-]{22}$/.test(link), link);
   const token = link.split('/').pop();
@@ -125,7 +126,7 @@ async function capture(p, { karat, category, weight, video, name }) {
   const wa = await p.getByRole('link', { name: 'Send on WhatsApp' }).getAttribute('href');
   const waText = decodeURIComponent(wa.split('?text=')[1]);
   check("WhatsApp link opens the client's chat", wa.startsWith('https://wa.me/971501234567?text='));
-  check('WhatsApp text = message + labelled link', waText.startsWith('مرحبًا فاطمة') && waText.endsWith(`شاهد القطع بعرض 360°:\n${link}`));
+  check('WhatsApp text = message + labelled link', waText.startsWith('مرحبًا فاطمة') && waText.endsWith(`القطع المختارة لك بعرض 360°. اختر ما تودّ رؤيته:\n${link}`));
   check('nothing sent automatically: WhatsApp is a link the salesperson taps', (await p.getByRole('link', { name: 'Send on WhatsApp' }).getAttribute('target')) === '_blank');
 
   // Image
@@ -144,7 +145,7 @@ async function capture(p, { karat, category, weight, video, name }) {
   const c = await cc.newPage();
   c.on('pageerror', e => errors.push('client: ' + e.message));
   await c.goto(link); await c.waitForLoadState('networkidle');
-  check("opens in the client's language (Arabic, right-to-left)", (await c.locator('[dir=rtl][lang=ar]').count()) > 0 && await visible(c.getByRole('heading', { name: 'مختارة لك' })));
+  check("opens in the client's language (Arabic, right-to-left)", (await c.locator('[dir=rtl][lang=ar]').count()) > 0 && await visible(c.getByRole('heading', { name: 'صينية مختارة لك' })));
   check('shop name and both pieces, in order', await visible(c.getByText('Al Fahidi Jewellers').first()) && (await c.locator('main ul > li h2').allInnerTexts()).join('|') === 'Rope bangle|Jhumka earrings');
   const pubPrice = (await c.locator('main ul > li').first().locator('[data-price]').innerText()).trim();
   check('live price matches the catalogue', pubPrice === bangleCatalogue, pubPrice);
@@ -160,7 +161,31 @@ async function capture(p, { karat, category, weight, video, name }) {
   check('share_viewed event', sql(`select count(*) from events where name='share_viewed' and props->>'share_id'='${shareId}'`) === '1');
   await shot(c, 'public-ar', true);
   await c.goto(link + '?lang=en'); await c.waitForLoadState('networkidle');
-  check('client can switch language', await visible(c.getByRole('heading', { name: 'Selected for you' })));
+  check('client can switch language', await visible(c.getByRole('heading', { name: 'A tray for you' })));
+  const trayHtml = await c.content();
+  check("the shop's name runs across every photo; no making charges in the page", (await c.locator('main li [aria-hidden] > span').count()) >= 3 && !/making|extras_aed/.test(trayHtml));
+
+  // ---------- the client answers: ticks pieces, shows the code in the shop
+  await c.getByRole('button', { name: "I'd like to see Rope bangle" }).click();
+  check('choosing shows the bar', await visible(c.getByText('Chosen: 1')));
+  let replyWa = null;
+  await c.route(/wa\.me/, (r) => { replyWa = r.request().url(); r.abort(); });
+  await c.getByRole('button', { name: 'Send my choice' }).click();
+  await until(() => replyWa !== null);
+  const replyText = replyWa ? new URL(replyWa).searchParams.get('text') : '';
+  check("'Send my choice' writes the reply to the salesperson (no website: their own number)", replyWa?.startsWith('https://wa.me/971500000001') && /Rope bangle \(ALF-\d{4}\)/.test(replyText) && /My tray code: [A-Z2-9]{6}/.test(replyText), replyText.replace(/\n/g, ' / '));
+  await c.goto(link + '?lang=en'); await c.waitForLoadState('networkidle');
+  await c.getByRole('button', { name: "I'd like to see Rope bangle" }).click();
+  await c.getByRole('button', { name: 'Show in the shop' }).click();
+  await c.locator('[data-tray-code]').waitFor();
+  const choiceCode = (await c.locator('[data-tray-code]').innerText()).trim();
+  check('the same choice keeps its code', replyText.endsWith(choiceCode), choiceCode);
+  check('the choice is saved, linked to the tray', sql(`select cardinality(piece_ids)||'|'||(share_id is not null) from site_trays where code='${choiceCode}'`) === '1|true');
+  await shot(c, 'client-choice-code', true);
+  await p.goto(base + '/trays'); await p.waitForLoadState('networkidle');
+  check("the salesperson sees it in Trays, with the client's name", await visible(p.getByText(/Fatima Al Mansoori's choice from your tray/)));
+  await p.goto(base + '/trays?code=' + choiceCode); await p.waitForURL(/\/trays\/[0-9a-f-]{36}$/);
+  check('typing the code opens the choice', await visible(p.getByText('Rope bangle').first()));
 
   // Link preview robot and the salesperson: not counted
   const bot = await browser.newContext({ userAgent: 'WhatsApp/2.24.25.76 A' });
@@ -183,13 +208,13 @@ async function capture(p, { karat, category, weight, video, name }) {
   check('a piece sold since shows as Sold, without a price', await visible(c.locator('main ul > li').nth(1).getByText('Sold')));
 
   // ---------- shares list
-  await p.goto(base + '/shares'); await p.waitForLoadState('networkidle');
-  const card = p.locator('main li').first();
-  check('shares list shows the client and that it was opened', /Fatima Al Mansoori/.test(await card.innerText()) && /Opened once/.test(await card.innerText()), (await card.innerText()).replace(/\n/g, ' | '));
+  await p.goto(base + '/shares'); await p.waitForURL(base + '/trays'); await p.waitForLoadState('networkidle');
+  const card = p.locator('section', { has: p.getByRole('heading', { name: 'Trays you sent' }) }).locator('li').first();
+  check('trays you sent: the client and that it was opened', /Fatima Al Mansoori/.test(await card.innerText()) && /Opened once/.test(await card.innerText()), (await card.innerText()).replace(/\n/g, ' | '));
   await shot(p, 'shares-list');
   p.once('dialog', (dlg) => dlg.accept());
-  await card.getByRole('button', { name: 'Turn off link' }).click();
-  await card.getByText('Link turned off').waitFor();
+  await card.getByRole('button', { name: 'Turn off tray' }).click();
+  await card.getByText('Tray turned off').waitFor();
   await c.goto(link); await c.waitForLoadState('networkidle');
   check('a turned-off link shows only "expired"', await visible(c.getByText('This link has expired.')) && !(await c.content()).includes('Rope bangle'));
   await c.goto(base + '/s/' + 'A'.repeat(22));
@@ -211,8 +236,8 @@ async function capture(p, { karat, category, weight, video, name }) {
   sql(`insert into shop_members (shop_id, user_id, role) values ('${shop}', '${sales}', 'salesperson')`);
   await s.goto(base + '/clients'); await s.waitForLoadState('networkidle');
   check("a colleague doesn't see your clients", await visible(s.getByText('No clients yet')));
-  await s.goto(base + '/shares'); await s.waitForLoadState('networkidle');
-  check("a colleague doesn't see your shares", await visible(s.getByText('No shares yet')));
+  await s.goto(base + '/trays'); await s.waitForLoadState('networkidle');
+  check("a colleague doesn't see the trays you sent", await visible(s.getByText("You haven't sent a tray yet.")));
 
   check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();

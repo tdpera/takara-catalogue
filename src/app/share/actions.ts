@@ -37,6 +37,7 @@ const CreateInput = z.object({
   clientId: z.uuid().nullable(),
   message: z.string().max(4000),
   aiMessage: z.boolean(),
+  days: z.union([z.literal(1), z.literal(7), z.literal(30)]).default(7),
 });
 
 export async function createShare(raw: unknown): Promise<{ ok: true; id: string; url: string; expiresAt: string } | Fail> {
@@ -44,10 +45,11 @@ export async function createShare(raw: unknown): Promise<{ ok: true; id: string;
   if (!parsed.success) return { ok: false, error: "invalid" };
   const s = await session();
   if (!s) return { ok: false, error: "auth" };
-  const { shopId, pieceIds, clientId, message, aiMessage } = parsed.data;
+  const { shopId, pieceIds, clientId, message, aiMessage, days } = parsed.data;
+  const expiresAt = new Date(Date.now() + days * 86400_000).toISOString();
   const ins = await s.supabase
     .from("shares")
-    .insert({ shop_id: shopId, salesperson_id: s.user.id, piece_ids: pieceIds, client_id: clientId, message: message.trim() || null })
+    .insert({ shop_id: shopId, salesperson_id: s.user.id, piece_ids: pieceIds, client_id: clientId, message: message.trim() || null, expires_at: expiresAt })
     .select("id, public_token, expires_at")
     .single();
   if (ins.error) return { ok: false, error: ins.error.code === "42501" ? "not_allowed" : "failed" };
@@ -55,9 +57,9 @@ export async function createShare(raw: unknown): Promise<{ ok: true; id: string;
     shop_id: shopId,
     user_id: s.user.id,
     name: "share_created",
-    props: { share_id: ins.data.id, pieces: pieceIds.length, has_client: !!clientId, ai_message: aiMessage },
+    props: { share_id: ins.data.id, pieces: pieceIds.length, has_client: !!clientId, ai_message: aiMessage, days },
   });
-  revalidatePath("/shares");
+  revalidatePath("/trays");
   return { ok: true, id: ins.data.id, url: `${await siteUrl()}/s/${ins.data.public_token}`, expiresAt: ins.data.expires_at };
 }
 
@@ -172,6 +174,6 @@ export async function revokeShare(id: string): Promise<{ ok: true } | Fail> {
   if (!s) return { ok: false, error: "auth" };
   const { data, error } = await s.supabase.from("shares").update({ revoked_at: new Date().toISOString() }).eq("id", id).is("revoked_at", null).select("id");
   if (error || !data?.length) return { ok: false, error: "failed" };
-  revalidatePath("/shares");
+  revalidatePath("/trays");
   return { ok: true };
 }

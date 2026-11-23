@@ -42,23 +42,22 @@ const html = async (p, url) => { await go(p, url); return p.content(); };
   // ---------- a customer on the shop's own address (no login)
   const cc = await browser.newContext({ ...devices['Pixel 5'] });
   const c = await cc.newPage();
-  c.on('pageerror', (e) => errors.push('customer: ' + e.message));
+  c.on('pageerror', (e) => errors.push('customer at ' + c.url() + ': ' + e.message.slice(0, 120)));
   const views0 = Number(sql(`select count(*) from site_views where shop_id='${shop}'`));
   await go(c, site + '/');
   check('a real visit is counted', await until(() => Number(sql(`select count(*) from site_views where shop_id='${shop}'`)) > views0));
   check('website home shows the shop', await visible(c.getByRole('heading', { name: 'Al Noor Jewellers (demo)' })));
   check("no Takara launch film on a shop's website", (await c.locator('.splash').count()) === 0);
   await shot(c, 'site-home', true);
+  check('the website shows only the showcase, never the whole catalogue', (await c.locator('#showcase ul > li').count()) === 5 && !(await c.locator('main').innerText()).includes('Box link chain'));
+  const askHref = await c.getByRole('link', { name: 'Ask for a tray' }).first().getAttribute('href');
+  check('"Ask for a tray" opens WhatsApp to the shop with the request written', askHref.startsWith('https://wa.me/971500000001') && /send me a tray/.test(decodeURIComponent(askHref)));
   await go(c, site + '/collection');
-  check('collection lists the pieces on show', /10 pieces/i.test(await c.locator('main').innerText()));
-  await go(c, site + '/collection?karat=22');
-  const karats = await c.locator('main ul > li p span.num:not([data-price])').allInnerTexts();
-  check('karat filter', karats.length > 0 && karats.every((k) => k.startsWith('22K')), karats.join(','));
-  await go(c, site + '/collection?w=u10');
-  const weights = (await c.locator('main ul > li p span.num:not([data-price])').allInnerTexts()).map((s) => parseFloat(s.split('·')[1]));
-  check('weight filter (under 10 g)', weights.length > 0 && weights.every((w) => w < 10), weights.join(','));
+  check('the old collection address goes to the showcase', c.url().endsWith('/#showcase'));
+  await go(c, site + '/p/ANJ-0003');
+  check("a piece that isn't in the showcase has no page", await visible(c.getByText("This piece isn't on the website.")));
 
-  for (const u of ['/', '/collection', '/p/ANJ-0002', '/visit']) {
+  for (const u of ['/', '/p/ANJ-0002', '/visit']) {
     const h = await html(c, site + u);
     check(`no making charges or extras in ${u}`, !/making|extras_aed|stone_g/.test(h));
   }
@@ -82,15 +81,17 @@ const html = async (p, url) => { await go(p, url); return p.content(); };
   check('rates older than 3 days: price hidden', (await c.locator('main [data-price]').first().innerText()).trim() === "Ask for today's price");
   sql(`update gold_rates set set_at = set_at + interval '5 days' where shop_id='${shop}'`);
 
-  // A hidden piece disappears, and so do its images.
-  const photo = sql(`select storage_path from piece_media where piece_id='${pid('ANJ-0004')}' and type='photo'`);
+  // A piece taken off the showcase disappears, and so do its images.
+  const photo = sql(`select storage_path from piece_media where piece_id='${pid('ANJ-0005')}' and type='photo'`);
   const imgOk = await c.request.get(`${app}/site-img/demo/${photo}`);
   check('website images are served, cached', imgOk.status() === 200 && /max-age/.test(imgOk.headers()['cache-control'] ?? ''));
-  sql(`update pieces set on_website=false where id='${pid('ANJ-0004')}'`);
-  await go(c, site + '/collection');
-  check('a hidden piece is not listed', !(await c.locator('main').innerText()).includes('Temple bead necklace'));
-  await go(c, site + '/p/ANJ-0004');
-  check('a hidden piece has no page', await visible(c.getByText("This isn't on the website any more.")));
+  const chainPhoto = sql(`select storage_path from piece_media where piece_id='${pid('ANJ-0003')}' and type='photo'`);
+  check("images of pieces outside the showcase aren't served", (await c.request.get(`${app}/site-img/demo/${chainPhoto}`)).status() === 404);
+  sql(`update pieces set on_website=false where id='${pid('ANJ-0005')}'`);
+  await go(c, site + '/');
+  check('a piece taken off the showcase is not listed', !(await c.locator('main').innerText()).includes('Floral jhumka earrings'));
+  await go(c, site + '/p/ANJ-0005');
+  check('and has no page', await visible(c.getByText("This piece isn't on the website.")));
   check("a hidden piece's image isn't served", (await c.request.get(`${app}/site-img/demo/${photo}?x=1`)).status() === 404);
   for (const bad of ['x/..%2F..%2Fetc%2Fpasswd', 'abc.png', `${shop}/logo-x.png`]) {
     const res = await c.request.get(`${app}/site-img/demo/${bad}`, { maxRedirects: 0 });
@@ -98,8 +99,8 @@ const html = async (p, url) => { await go(p, url); return p.content(); };
     check(`a made-up image path is refused (${bad})`, [400, 404, 307].includes(st) && !(res.headers()['content-type'] ?? '').startsWith('image/'), String(st));
   }
 
-  // The tray: add, show in the shop, send on WhatsApp.
-  await go(c, site + '/collection');
+  // The tray: add from the showcase, show in the shop, send on WhatsApp.
+  await go(c, site + '/');
   await c.getByRole('button', { name: /^Add .* to your tray$/ }).nth(0).click();
   await c.getByRole('button', { name: /^Add .* to your tray$/ }).nth(0).click();
   check('tray count in the header', (await c.locator('header a[href="/tray"]').innerText()).includes('2'));
@@ -122,10 +123,10 @@ const html = async (p, url) => { await go(p, url); return p.content(); };
   check("the tray's own page shows the code and pieces", await visible(c.getByRole('heading', { name: code })) && (await c.locator('main ol > li').count()) === 2);
 
   // Path address, language, unknown shop.
-  await go(c, app + '/site/demo/collection');
-  check('also served at /site/<slug>', await visible(c.getByRole('heading', { name: 'Collection' })));
+  await go(c, app + '/site/demo');
+  check('also served at /site/<slug>', await visible(c.getByRole('heading', { name: 'Al Noor Jewellers (demo)' })));
   await go(c, site + '/?lang=ar');
-  check('Arabic, right to left, remembered', (await c.evaluate(() => document.documentElement.dir)) === 'rtl' && (await (await go(c, site + '/collection'), c.evaluate(() => document.documentElement.lang))) === 'ar');
+  check('Arabic, right to left, remembered', (await c.evaluate(() => document.documentElement.dir)) === 'rtl' && (await (await go(c, site + '/visit'), c.evaluate(() => document.documentElement.lang))) === 'ar');
   await shot(c, 'site-ar');
   await go(c, app + '/site/no-such-shop');
   check('unknown website: not found', await visible(c.getByText("This page doesn't exist.")));
@@ -159,8 +160,8 @@ const html = async (p, url) => { await go(p, url); return p.content(); };
   await shot(o, 'app-sold-how', true);
   await o.getByRole('radio', { name: 'In stock', exact: true }).evaluate((el) => el.click());
   check('un-selling clears how and when', await until(() => sql(`select coalesce(sold_via,'-')||coalesce(sold_at::text,'-') from pieces where id='${pid('ANJ-0003')}'`) === '--'));
-  await o.getByRole('switch', { name: 'On the website' }).evaluate((el) => el.click());
-  check('hide a piece from its page', await until(() => sql(`select on_website from pieces where id='${pid('ANJ-0003')}'`) === 'f'));
+  await o.getByRole('switch', { name: 'In the website showcase' }).evaluate((el) => el.click());
+  check('add a piece to the showcase from its page', await until(() => sql(`select on_website from pieces where id='${pid('ANJ-0003')}'`) === 't'));
 
   await go(o, app + '/website');
   await o.getByLabel('Opening hours').fill('Daily 10:00–22:00');
@@ -176,7 +177,7 @@ const html = async (p, url) => { await go(p, url); return p.content(); };
   await go(o, app + '/report');
   await o.getByRole('heading', { name: 'Monthly report' }).waitFor();
   const rep = await o.locator('main').innerText();
-  check('monthly report: website, trays and how buyers found what they bought', /website visitors/i.test(rep) && /website tray/i.test(rep) && /most-viewed pieces/i.test(rep));
+  check('monthly report: website, trays and how buyers found what they bought', /website visitors/i.test(rep) && /tray code in the shop/i.test(rep) && /most-viewed pieces/i.test(rep));
   await shot(o, 'app-report', true);
 
   await go(o, app + '/admin');
@@ -202,6 +203,17 @@ const html = async (p, url) => { await go(p, url); return p.content(); };
   check('salesperson: website settings send them to Shop', await until(() => new URL(s.url()).pathname === '/shop'));
   await go(s, app + '/admin');
   check('salesperson: no Takara dashboard', await visible(s.getByText("This page doesn't exist.")));
+
+  // ---------- the demo account
+  await go(c, app + '/login');
+  check('sign-in page offers the demo number and code', await visible(c.getByText('050 000 0001')) && await visible(c.getByRole('button', { name: 'Use the demo number' })));
+  await go(s, app + '/shop');
+  check("other accounts don't get the demo button", (await s.getByRole('button', { name: /demo shop/ }).count()) === 0);
+  await go(o, app + '/shop');
+  await o.getByRole('button', { name: 'Rebuild the demo shop' }).click();
+  await o.waitForURL(app + '/', { timeout: 90000 });
+  check('the demo account rebuilds the demo shop in one tap', await until(() => sql("select count(*) from pieces p join shops s on s.id = p.shop_id where s.name = 'Al Noor Jewellers (demo)'") === '10', 60000)
+    && sql("select count(*) from shops where name = 'Al Noor Jewellers (demo)'") === '1' && sql("select count(*) from shop_sites where published") === '1');
 
   check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();

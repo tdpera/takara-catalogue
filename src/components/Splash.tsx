@@ -4,10 +4,11 @@
  * gold, the stone is set and flares; the name rises in; then we fly through the ring into the app.
  *
  * - Once per app session (SPLASH_SCRIPT in <head> marks later pages data-splash="off" before
- *   anything is drawn); never on clients' share links; never for reduced motion.
+ *   anything is drawn); never on clients' share links; never for reduced motion. Add ?intro to
+ *   any address to play it again (for demos).
  * - The film is only requested when the splash actually plays (SPLASH_RUN adds its sources), and
  *   is cached for a year, so a phone downloads it once (about 0.6 MB).
- * - If it can't start within 1.4 s (slow connection, Save-Data, autoplay blocked), a still of the
+ * - If it can't start within 2 s (slow connection, Save-Data, autoplay blocked), a still of the
  *   finished ring with a CSS glint plays instead. A failsafe hides the splash after 7 s whatever
  *   happens, and taps always pass straight through to the app.
  */
@@ -21,12 +22,15 @@ export function Splash({ name, tagline, city }: { name: string; tagline: string;
       <div className="splash-stage">
         {/* Sources carry data-src, not src: nothing downloads unless SPLASH_RUN decides to play. The
             script only sets attributes, never adds elements, so React's hydration leaves it alone. */}
+        {/* MP4 (H.264) first: every phone decodes it in hardware, and iPhones may claim WebM and
+            then fail on it. WebM is for browsers built without H.264. The exact codecs let each
+            browser skip a file it can't play instead of trying it. */}
         <video className="splash-film" muted playsInline preload="none" disablePictureInPicture disableRemotePlayback tabIndex={-1} suppressHydrationWarning>
-          <source data-src={`${SPLASH_FILM}.webm`} type="video/webm" suppressHydrationWarning />
-          <source data-src={`${SPLASH_FILM}.mp4`} type="video/mp4" suppressHydrationWarning />
+          <source data-src={`${SPLASH_FILM}.mp4`} type='video/mp4; codecs="avc1.64001F"' suppressHydrationWarning />
+          <source data-src={`${SPLASH_FILM}.webm`} type='video/webm; codecs="vp9"' suppressHydrationWarning />
         </video>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="splash-still" src={`${SPLASH_FILM}.jpg`} alt="" loading="lazy" decoding="async" />
+        <img className="splash-still" src={`${SPLASH_FILM}.jpg`} alt="" loading="lazy" decoding="async" fetchPriority="low" />
         <i className="splash-glint" />
       </div>
       <div className="splash-text">
@@ -48,18 +52,21 @@ export function Splash({ name, tagline, city }: { name: string; tagline: string;
 }
 
 /** Runs in <head> before the first paint: show the splash only on the first page of a session. */
-export const SPLASH_SCRIPT = `try{var k="souq.splash",d=document.documentElement;if(sessionStorage.getItem(k)||location.pathname.indexOf("/s/")===0||matchMedia("(prefers-reduced-motion: reduce)").matches){d.setAttribute("data-splash","off")}else{sessionStorage.setItem(k,"1")}}catch(e){document.documentElement.setAttribute("data-splash","off")}`;
+export const SPLASH_SCRIPT = `try{var k="souq.splash",d=document.documentElement,again=/[?&]intro(=|&|$)/.test(location.search);if((sessionStorage.getItem(k)&&!again)||location.pathname.indexOf("/s/")===0||matchMedia("(prefers-reduced-motion: reduce)").matches){d.setAttribute("data-splash","off")}else{sessionStorage.setItem(k,"1")}}catch(e){document.documentElement.setAttribute("data-splash","off")}`;
 
 /**
  * Runs right after the splash markup: starts the film, and picks the mode the CSS timeline runs in
- * (data-mode="film" when it's playing, "still" if it isn't within 1.4 s).
+ * (data-mode="film" when it's playing, "still" if it isn't within 2 s).
+ * Only gives up on the film when the last file fails: a browser that can't play the first one
+ * moves on to the next by itself.
  */
 export const SPLASH_RUN = `(function(){try{var d=document.documentElement;if(d.getAttribute("data-splash")==="off")return;
 var s=document.querySelector(".splash");if(!s)return;var v=s.querySelector("video");
 var go=function(m){if(s.getAttribute("data-mode"))return;s.setAttribute("data-mode",m);if(m==="still"&&v){try{v.pause()}catch(e){}}};
 var c=navigator.connection;if(!v||(c&&c.saveData)){go("still");return;}
 var ss=v.querySelectorAll("source");for(var i=0;i<ss.length;i++)ss[i].src=ss[i].getAttribute("data-src");
+v.muted=true;v.playsInline=true;
 v.addEventListener("playing",function(){go("film")},{once:true});
-v.addEventListener("error",function(){go("still")},true);
+v.addEventListener("error",function(){go("still")});ss[ss.length-1].addEventListener("error",function(){go("still")});
 v.preload="auto";v.load();var p=v.play();if(p&&p.catch)p.catch(function(){go("still")});
-setTimeout(function(){go("still")},1400);}catch(e){}})();`;
+setTimeout(function(){go("still")},2000);}catch(e){}})();`;

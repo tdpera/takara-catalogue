@@ -549,8 +549,10 @@ molten gold, then the stone flashing.
   time (multi-bounce diamond, bloom, reflections, sparks), and every phone sees the same quality
   with no graphics load while the app starts.
 - **Kind to slow connections:** the film is requested only when the splash really plays, is
-  cached for a year under a versioned name (ring-v1.*), and if it hasn't started within 1.4 s
-  (or Save-Data is on) a still of the finished ring with a CSS glint plays instead. A failsafe
+  cached for a year under a versioned name (ring-v1.*), and if it hasn't started within 2 s
+  (or Save-Data is on) a still of the finished ring with a CSS glint plays instead. MP4 (H.264)
+  is offered first with exact codecs: iPhones can claim WebM and then fail on it, and the film
+  only counts as failed when the last file does. `?intro` on any address replays it for demos. A failsafe
   hides the splash after 7 s whatever happens; taps always pass through to the app.
 - The name, tagline and city stay real text over the film (crisp, and in the user's language);
   the exit still flies through the ring, with the film scaled by the same --fly value that opens

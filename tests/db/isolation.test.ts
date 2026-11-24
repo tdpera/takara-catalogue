@@ -4,7 +4,7 @@
  * through the public API, exactly as the app does.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { adminClient, anonClient, createUser, deleteUsers, ok, type TestUser } from "./helpers";
+import { adminClient, anonClient, createUser, deleteUsers, ok, type TestUser, createShop } from "./helpers";
 
 let ownerA: TestUser, managerA: TestUser, salesA1: TestUser, salesA2: TestUser, ownerB: TestUser, salesB: TestUser;
 let shopA: string, shopB: string;
@@ -33,8 +33,8 @@ async function joinAs(owner: TestUser, shop: string, user: TestUser, role: "mana
 beforeAll(async () => {
   [ownerA, managerA, salesA1, salesA2, ownerB, salesB] = await Promise.all(Array.from({ length: 6 }, createUser));
 
-  shopA = ok(await ownerA.db.rpc("create_shop", { p_name: "Al Fahidi Jewellers" })) as string;
-  shopB = ok(await ownerB.db.rpc("create_shop", { p_name: "Meena Gold" })) as string;
+  shopA = await createShop(ownerA, "Al Fahidi Jewellers");
+  shopB = await createShop(ownerB, "Meena Gold");
   await joinAs(ownerA, shopA, managerA, "manager");
   await joinAs(ownerA, shopA, salesA1, "salesperson");
   await joinAs(ownerA, shopA, salesA2, "salesperson");

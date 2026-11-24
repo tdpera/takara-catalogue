@@ -646,3 +646,40 @@ its designs. Shops should send customers a tray of chosen pieces instead.
   per server start. If a migration hasn't been run, every page shows which file in
   `supabase/updates/` to paste into the Supabase SQL Editor (all updates, or only the latest,
   worked out from what the database has), and recovers by itself once it's run.
+
+## 27. Shops approved by Takara, "Needs attention", trays as an image with a QR code
+Takara is run as a B2B service: each shop is its own business, and Takara's owner decides who
+joins (e.g. once the setup fee is paid) and watches how every shop is doing.
+- **New shops wait for approval.** Anyone can sign in and enter a shop name, but the shop starts
+  `pending`: until a Takara admin approves it, its staff can't read or add anything. This is
+  enforced in the database, not the screens: `private.is_member` and `private.has_role`, which
+  every policy and function is built on, now also require the shop to be `active`. The welcome
+  page shows "{shop} is waiting for approval" (and "Message Takara on WhatsApp" when
+  `TAKARA_WHATSAPP` is set). One request at a time per person.
+- **Approve, Decline, Suspend, Reactivate** are buttons on `/admin` (Waiting for approval, with the
+  owner's number as a WhatsApp link) and on each shop's page. Decline is the same as suspend, so
+  it can be undone. Changes go through `admin_set_shop_status` (Takara admins only) and are logged
+  as `shop_status` events. A suspended shop's staff see "paused"; its tray links read as "not
+  found" and its website as offline. Nothing is deleted. Nothing is sent to the shop
+  automatically.
+- **Existing shops became active** with the update, so nothing stops working. The example shop
+  the demo account loads is marked `is_demo` and is always created active: the demo login, Load
+  / Rebuild the demo shop, `/site/demo` and its tray link work as before. In the dashboard it's
+  marked **Demo**, never appears under Waiting for approval, isn't counted in the totals, and its
+  issues stay on its own row instead of in Needs attention.
+- **Needs attention** (`/admin`, above the shops table; also on each shop's page) lists problems
+  across all open shops, worst first: customer choices not opened for over a day (the customer is
+  waiting), AI errors in the last 7 days, pieces older than a day without a photo (an upload that
+  never finished), gold rates 3+ days old or never set, no activity for 7+ days. "No website yet"
+  is only a note on the shop's row. Counts only: no customer names or numbers. The rules are in
+  `src/lib/shop-issues.ts` (unit-tested).
+- **Trays as an image.** After creating a tray, and on each card under "Trays you sent", **Save
+  tray image** draws the whole tray on the phone (up to 24 pieces; two columns up to six, three
+  above that, so the image stays a size phones can handle), with the shop's name faintly across
+  each photo like the tray page, and a footer with a **QR code to the live tray**, the short link
+  and "valid until". Texts follow the client's language. It replaces the old catalogue image
+  (which had no way back to the tray). The QR is drawn module by module with the `qrcode` package,
+  so it stays sharp; the browser tests decode it and compare it with the link.
+- **Updates.** Each file in `supabase/updates/` brings a database from where it is to the latest
+  version; the app names the right one (`update-shop-approval.sql` for a database that already
+  had Digital trays).

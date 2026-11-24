@@ -196,7 +196,8 @@ export async function addPieces(db, shopId, list, { owner, sales = null, ageH = 
 export async function loadDemoShop(db, { ownerId, ownerPhone, salesId = null, log = () => {} }) {
   await removeOldShop(db, DEMO_SHOP_NAME, ownerId);
   const shop = must(
-    await db.from("shops").insert({ name: DEMO_SHOP_NAME, sku_prefix: "ANJ", default_making_per_g: 18, vat_enabled: true, created_by: ownerId }).select("id").single(),
+    // The example shop is always open: it never waits for Takara's approval.
+    await db.from("shops").insert({ name: DEMO_SHOP_NAME, sku_prefix: "ANJ", default_making_per_g: 18, vat_enabled: true, created_by: ownerId, status: "active", is_demo: true, status_changed_at: new Date().toISOString() }).select("id").single(),
     "create shop",
   );
   must(await db.from("shop_members").insert({ shop_id: shop.id, user_id: ownerId, role: "owner" }), "add owner");

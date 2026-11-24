@@ -3,7 +3,7 @@
  * so it may only see a valid share's pieces through get_share(token).
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { adminClient, anonClient, createUser, deleteUsers, ok, type TestUser } from "./helpers";
+import { adminClient, anonClient, createUser, deleteUsers, ok, type TestUser, createShop } from "./helpers";
 
 let owner: TestUser, sales: TestUser, other: TestUser;
 let shop: string, otherShop: string;
@@ -21,8 +21,8 @@ async function addPiece(u: TestUser, s: string, name: string) {
 
 beforeAll(async () => {
   [owner, sales, other] = await Promise.all(Array.from({ length: 3 }, createUser));
-  shop = ok(await owner.db.rpc("create_shop", { p_name: "Share Shop" })) as string;
-  otherShop = ok(await other.db.rpc("create_shop", { p_name: "Other Shop" })) as string;
+  shop = await createShop(owner, "Share Shop");
+  otherShop = await createShop(other, "Other Shop");
   ok(await owner.db.rpc("invite_member", { p_shop: shop, p_phone: sales.phone, p_role: "salesperson" }));
   ok(await sales.db.rpc("accept_invites"));
   ok(await owner.db.from("gold_rates").insert({ shop_id: shop, karat: 22, aed_per_g: 437.5, set_by: owner.id }));

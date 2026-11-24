@@ -192,6 +192,48 @@ const html = async (p, url) => { await go(p, url); return p.content(); };
   check('the dashboard never shows client names or numbers', !detail.includes('Fatima') && !detail.includes('501234567') && !detail.includes('50 123 4567'));
   await shot(o, 'admin-shop', true);
 
+  // ---------- a new shop waits for Takara's approval (seeded: Pearl Souq Jewellers, 050 000 0004)
+  await go(o, app + '/admin');
+  const waitList = o.locator('section', { has: o.getByRole('heading', { name: /^Waiting for approval/ }) });
+  check("waiting shops are listed with the owner's WhatsApp", /Pearl Souq Jewellers/.test(await waitList.innerText()) && /Rashid/.test(await waitList.innerText())
+    && (await waitList.getByRole('link', { name: /50 000 0004/ }).getAttribute('href')) === 'https://wa.me/971500000004');
+  check("the demo shops never wait for approval and aren't counted in Needs attention", !/\(demo\)/.test(await waitList.innerText()) && await visible(o.getByText('Nothing needs attention right now.')));
+  check('the demo shops are marked Demo', (await o.locator('table').getByText('Demo', { exact: true }).count()) === 2);
+  await shot(o, 'admin-approvals', true);
+  const nc = await browser.newContext({ ...devices['Pixel 5'] });
+  await nc.addInitScript(() => { try { sessionStorage.setItem('souq.splash', '1'); } catch {} });
+  const nw = await nc.newPage();
+  nw.on('pageerror', (e) => errors.push('new shop: ' + e.message));
+  await login(nw, '050 000 0004');
+  check('a shop waiting for approval sees the waiting screen, not the app', await visible(nw.getByRole('heading', { name: 'Pearl Souq Jewellers is waiting for approval' })) && new URL(nw.url()).pathname === '/welcome');
+  await go(nw, app + '/');
+  check('and the catalogue sends them back to it', new URL(nw.url()).pathname === '/welcome' && !(await nw.content()).includes('Al Noor'));
+  await shot(nw, 'waiting', true);
+  await waitList.getByRole('button', { name: 'Approve Pearl Souq Jewellers' }).click();
+  check('Approve opens the shop', await until(() => sql("select status from shops where name='Pearl Souq Jewellers'") === 'active'));
+  await nw.getByRole('button', { name: 'Check again' }).click();
+  await nw.waitForURL(app + '/');
+  check('once approved, the owner is straight in their (empty) catalogue', await visible(nw.getByText('No pieces yet')));
+  // A customer's choice nobody opened for two days, and rates never set: Needs attention.
+  const pearl = sql("select id from shops where name='Pearl Souq Jewellers'");
+  sql(`insert into site_trays (shop_id, code, piece_ids, channel, created_at) values ('${pearl}', 'QQQQ22', array[gen_random_uuid()], 'whatsapp', now() - interval '2 days')`);
+  await go(o, app + '/admin');
+  const att = await o.locator('section', { has: o.getByRole('heading', { name: 'Needs attention' }) }).innerText();
+  check('Needs attention: customers waiting first, then the rest', /Pearl Souq Jewellers: Customer choices not opened for over a day: 1/.test(att) && /Pearl Souq Jewellers: Gold rates never set/.test(att)
+    && att.indexOf('Customer choices') < att.indexOf('Gold rates never set') && !/\(demo\)/.test(att), att.replace(/\n/g, ' | '));
+  await shot(o, 'admin-attention', true);
+  await o.getByRole('link', { name: /Pearl Souq Jewellers: Customer choices/ }).click();
+  await o.waitForURL(/\/admin\/shops\//);
+  await o.getByRole('button', { name: 'Suspend Pearl Souq Jewellers' }).click();
+  check('Suspend closes the shop', await until(() => sql(`select status from shops where id='${pearl}'`) === 'suspended'));
+  await go(nw, app + '/');
+  check("a suspended shop's staff are told it's paused", await visible(nw.getByRole('heading', { name: 'Pearl Souq Jewellers is paused' })));
+  await o.getByRole('button', { name: 'Reactivate Pearl Souq Jewellers' }).click();
+  check('Reactivate opens it again', await until(() => sql(`select status from shops where id='${pearl}'`) === 'active'));
+  await go(o, o.url());
+  check('status changes show in the activity', await visible(o.getByText('Takara suspended the shop')) && await visible(o.getByText('Takara reactivated the shop')) && await visible(o.getByText('Takara approved the shop')));
+  await shot(o, 'admin-shop-status', true);
+
   // ---------- a salesperson: no report, no website settings, no dashboard
   const sc = await browser.newContext({ ...devices['Pixel 5'] });
   await sc.addInitScript(() => { try { sessionStorage.setItem('souq.splash', '1'); } catch {} });
@@ -214,6 +256,12 @@ const html = async (p, url) => { await go(p, url); return p.content(); };
   await o.waitForURL(app + '/', { timeout: 90000 });
   check('the demo account rebuilds the demo shop in one tap', await until(() => sql("select count(*) from pieces p join shops s on s.id = p.shop_id where s.name = 'Al Noor Jewellers (demo)'") === '10', 60000)
     && sql("select count(*) from shops where name = 'Al Noor Jewellers (demo)'") === '1' && sql("select count(*) from shop_sites where published") === '1');
+  check('the rebuilt demo shop is open straight away, marked as the demo', sql("select status || ' ' || is_demo from shops where name = 'Al Noor Jewellers (demo)'") === 'active true');
+  await go(c, app + '/site/demo');
+  check('its example website still works', await visible(c.getByRole('heading', { name: 'Al Noor Jewellers (demo)' })));
+  const demoToken = sql("select public_token from shares s join shops sh on sh.id = s.shop_id where sh.name = 'Al Noor Jewellers (demo)' limit 1");
+  await go(c, app + '/s/' + demoToken + '?lang=en');
+  check('and so does its Digital tray link', await visible(c.getByText('Al Noor Jewellers (demo)').first()) && (await c.locator('main ul > li h2').count()) === 4);
 
   check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();

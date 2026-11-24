@@ -1,4 +1,4 @@
-const { sql, TMP, visible, until } = require('./lib.cjs');
+const { sql, TMP, visible, until, createShop } = require('./lib.cjs');
 const { chromium, devices } = require('playwright');
 const { execSync } = require('child_process');
 const M = process.argv[2], OUT = process.argv[3];
@@ -51,9 +51,7 @@ async function capture(p, { weight, karat = '22K', category = 'Bangle', video = 
   p.on('pageerror', e => errors.push(e.message));
 
   await login(p, '050 000 0001');
-  await p.getByLabel('Shop name').fill('Al Fahidi Jewellers');
-  await p.getByRole('button', { name: 'Create shop' }).click();
-  await p.waitForURL(base + '/');
+  await createShop(p, 'Al Fahidi Jewellers', base);
   await p.goto(base + '/rates');
   await p.getByRole('textbox', { name: /^24K/ }).fill('472.50');
   await p.getByRole('button', { name: 'Fill 22K, 21K, 18K from 24K' }).click();

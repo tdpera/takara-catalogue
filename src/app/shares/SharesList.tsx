@@ -1,9 +1,12 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useT } from "@/i18n/client";
+import type { MessageKey } from "@/i18n";
 import { formatDubaiDateTime } from "@/lib/format";
+import { saveTrayImage } from "@/lib/share-image";
 import { btn } from "@/components/ui";
-import { revokeShare } from "@/app/share/actions";
+import { IconImage } from "@/components/icons";
+import { revokeShare, trayImageData } from "@/app/share/actions";
 import { Avatar } from "@/components/Avatar";
 
 export type ShareRow = {
@@ -23,6 +26,7 @@ function Row({ r }: { r: ShareRow }) {
   const [state, setState] = useState(r.state);
   const [copied, setCopied] = useState(false);
   const [pending, start] = useTransition();
+  const [img, setImg] = useState<{ busy: boolean; msg: MessageKey | null }>({ busy: false, msg: null });
   const when = (iso: string) => formatDubaiDateTime(iso, locale);
   const opened =
     r.views === 0 ? t("shares.notOpened") : r.views === 1 ? t("shares.openedOnce", { date: when(r.lastView!) }) : t("shares.opened", { count: r.views, date: when(r.lastView!) });
@@ -61,6 +65,28 @@ function Row({ r }: { r: ShareRow }) {
           <a href={r.url} target="_blank" rel="noopener noreferrer" className={btn}>{t("share.openLink")}</a>
           <button
             type="button"
+            className={btn}
+            disabled={img.busy}
+            onClick={async () => {
+              setImg({ busy: true, msg: null });
+              try {
+                const d = await trayImageData(r.id);
+                if (!d.ok) {
+                  if (d.error === "expired") setState("expired");
+                  setImg({ busy: false, msg: d.error === "expired" ? "shares.expiredNow" : "share.imageFailed" });
+                  return;
+                }
+                const res = await saveTrayImage({ ...d, noPhoto: t("catalogue.noPhoto") });
+                setImg({ busy: false, msg: res === "downloaded" ? "share.imageSaved" : null });
+              } catch {
+                setImg({ busy: false, msg: "share.imageFailed" });
+              }
+            }}
+          >
+            <IconImage size={18} /> {img.busy ? t("share.imageWorking") : t("shares.saveImage")}
+          </button>
+          <button
+            type="button"
             className={btn + " text-danger"}
             disabled={pending}
             onClick={() => {
@@ -73,6 +99,7 @@ function Row({ r }: { r: ShareRow }) {
           >
             {t("shares.revoke")}
           </button>
+          <p role="status" className="basis-full text-sm">{img.msg ? t(img.msg) : ""}</p>
         </div>
       )}
     </li>

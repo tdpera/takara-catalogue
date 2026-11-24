@@ -29,3 +29,35 @@ async function until(fn, timeout = 10000) {
 
 module.exports.visible = visible;
 module.exports.until = until;
+
+/**
+ * Signs up a new shop from the welcome form. New shops wait for Takara's approval: checks the
+ * waiting screen, approves the shop in the database (as a Takara admin would) and opens the app.
+ */
+async function createShop(p, name, base = 'http://localhost:3000') {
+  await p.getByLabel('Shop name').fill(name);
+  await p.getByRole('button', { name: 'Create shop' }).click();
+  await p.getByRole('heading', { name: `${name} is waiting for approval` }).waitFor({ timeout: 15000 });
+  sql(`update shops set status = 'active' where name = '${name.replace(/'/g, "''")}' and status = 'pending'`);
+  await p.getByRole('button', { name: 'Check again' }).click();
+  await p.waitForURL(base + '/');
+}
+
+/** Reads the QR code in a PNG (in a blank page, with jsQR). Returns its text, or null. */
+async function readQr(browser, file) {
+  const page = await browser.newPage();
+  await page.addScriptTag({ path: require.resolve('jsqr/dist/jsQR.js') });
+  const src = 'data:image/png;base64,' + require('fs').readFileSync(file).toString('base64');
+  const text = await page.evaluate(async (src) => {
+    const img = new Image(); img.src = src; await img.decode();
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height);
+    return (window.jsQR(d.data, d.width, d.height) || {}).data || null;
+  }, src);
+  await page.close();
+  return text;
+}
+
+module.exports.createShop = createShop;
+module.exports.readQr = readQr;

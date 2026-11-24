@@ -9,8 +9,8 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useT } from "@/i18n/client";
 import { LOCALE_NAMES, type MessageKey } from "@/i18n";
 import type { ClientRow, ShareItem } from "@/lib/share-data";
-import { buildMessage, ENGLISH_CLOSING, englishIntro, noPriceText, priceNote, whatsappLink, withLink, type MsgLang } from "@/lib/share-message";
-import { IMAGE_MAX, renderCatalogueImage, shareOrDownload } from "@/lib/share-image";
+import { buildMessage, ENGLISH_CLOSING, englishIntro, whatsappLink, withLink, type MsgLang } from "@/lib/share-message";
+import { saveTrayImage } from "@/lib/share-image";
 import { formatDubaiDateTime } from "@/lib/format";
 import { btn, btnLink, btnPrimary, errorText, hint, input, label } from "@/components/ui";
 import { createShare, saveClient, writeWithAi } from "./actions";
@@ -168,19 +168,18 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
   }
 
   async function makeImage() {
+    if (!created) return;
     setImg({ busy: true, msg: null });
     try {
-      const date = new Intl.DateTimeFormat(lang === "en" ? "en-GB" : lang, { timeZone: "Asia/Dubai", day: "numeric", month: "long", year: "numeric", numberingSystem: "latn" }).format(new Date());
-      const blob = await renderCatalogueImage({
+      const r = await saveTrayImage({
         shop: props.shopName,
-        dateLine: date,
-        note: priceNote(lang, props.vat),
+        vat: props.vat,
+        lang,
+        url: created.url,
+        expiresAt: created.expiresAt,
         noPhoto: t("catalogue.noPhoto"),
-        noPrice: noPriceText(lang),
         items: items.map((i) => ({ name: i.name, karat: i.karat, weight: i.weight, price: i.price, photo: i.photo })),
-        rtl: lang === "ar",
       });
-      const r = await shareOrDownload(blob, `${props.shopName.replace(/[^\p{L}\p{N}]+/gu, "-")}-catalogue.png`, props.shopName);
       setImg({ busy: false, msg: r === "downloaded" ? "share.imageSaved" : null });
     } catch {
       setImg({ busy: false, msg: "share.imageFailed" });
@@ -367,18 +366,17 @@ export function ShareComposer(props: { shopId: string; shopName: string; vat: bo
               <IconChat size={20} /> {t("share.whatsapp")}
             </a>
             <p className={hint}>{t("share.whatsappHint")}</p>
+            <div className="border-t border-line pt-3">
+              <button type="button" className={btn + " w-full"} disabled={img.busy} onClick={() => void makeImage()}>
+                <IconImage size={18} /> {img.busy ? t("share.imageWorking") : t("share.image")}
+              </button>
+              <p className={hint}>{t("share.imageHint")}</p>
+              <p role="status" className="mt-1 text-sm">{img.msg ? t(img.msg) : ""}</p>
+            </div>
             <a href={created.url} target="_blank" rel="noopener noreferrer" className={btnLink}>{t("share.openLink")}</a>
           </div>
         )}
         {createErr && <p role="alert" className={errorText}>{t(createErr)}</p>}
-
-        <div className="border-t border-line pt-3">
-          <button type="button" className={btn + " w-full"} disabled={img.busy} onClick={() => void makeImage()}>
-            <IconImage size={18} /> {img.busy ? t("share.imageWorking") : t("share.image")}
-          </button>
-          {items.length > IMAGE_MAX && <p className={hint}>{t("share.imageMore", { max: IMAGE_MAX })}</p>}
-          <p role="status" className="mt-1 text-sm">{img.msg ? t(img.msg) : ""}</p>
-        </div>
       </section>
     </div>
   );

@@ -4,17 +4,20 @@ import { getT } from "@/i18n/server";
 import { formatAED, formatDubaiDateTime, formatNumber } from "@/lib/format";
 import { aiCostUsd, formatUsd, type TokenUse } from "@/lib/ai-cost";
 import { delta, type Stats } from "@/lib/report";
-import { rateAgeDays } from "@/lib/rates";
+import { needsAttention, shopIssues, type ShopHealth, type ShopStatus } from "@/lib/shop-issues";
 import { MonthBars } from "@/components/report/MonthBars";
+import { IssueChip, issueText, OwnerPhone, StatusBadge, StatusButtons } from "@/components/admin/parts";
 import type { Translate } from "@/i18n";
 
 type Overview = {
-  month: string; shops: number; active_shops: number; published_sites: number;
+  month: string; shops: number; active_shops: number; pending: number; suspended: number; published_sites: number;
   current: Stats; previous: Stats;
   trend: { month: string; pieces_added: number; trays: number; sold: number; site_visitors: number }[];
 };
 type ShopRow = {
   id: string; name: string; created_at: string; last_activity: string | null; staff: number; in_stock: number;
+  status: ShopStatus; status_changed_at: string | null; is_demo: boolean;
+  owner: { name: string | null; phone: string | null } | null; health: ShopHealth;
   rates_set_at: string | null; site: { slug: string; published: boolean } | null;
   last30: Stats & { ai_tokens: TokenUse };
 };
@@ -38,15 +41,6 @@ function Change({ cur, prev, t }: { cur: number; prev: number; t: Translate }) {
   return <span className={d.dir === "up" ? "font-semibold text-live" : "font-semibold text-warn"}>{d.dir === "up" ? "▲" : "▼"} {t(d.dir === "up" ? "report.up" : "report.down", { n: formatNumber(d.n, 0) })}</span>;
 }
 
-/** Flags worth a phone call: stale rates, a quiet shop, no website yet. */
-function flags(s: ShopRow): ("stale" | "quiet" | "nosite")[] {
-  const out: ("stale" | "quiet" | "nosite")[] = [];
-  if (!s.rates_set_at || rateAgeDays(s.rates_set_at) >= 3) out.push("stale");
-  if (!s.last_activity || Date.now() - Date.parse(s.last_activity) > 7 * 86400_000) out.push("quiet");
-  if (!s.site?.published) out.push("nosite");
-  return out;
-}
-
 export default async function AdminHome({ searchParams }: { searchParams: Promise<{ sort?: string }> }) {
   const { supabase } = await requireUser();
   const { t, locale } = await getT();
@@ -64,6 +58,9 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       default: return (b.last_activity ?? "").localeCompare(a.last_activity ?? "");
     }
   });
+  const all = (shopsRaw ?? []) as ShopRow[];
+  const waiting = all.filter((s) => s.status === "pending" && !s.is_demo).sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const issues = needsAttention(all);
   const c = o.current, p = o.previous;
   const webSales = (s: Stats) => (s.sold_by.website?.count ?? 0) + (s.sold_by.tray?.count ?? 0);
   const th = (key: Sort, label: string) => (
@@ -78,6 +75,47 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         <h1 className="font-display text-[2.2rem] leading-tight">{t("admin.title")}</h1>
         <p className="mt-1 text-muted">{t("admin.intro")}</p>
       </div>
+
+      {waiting.length > 0 && (
+        <section aria-labelledby="wait-h" className="rounded-[2px] border border-gold-line/60 bg-gold-soft/40 p-4 sm:p-5">
+          <h2 id="wait-h" className="font-display text-[1.6rem] leading-tight">{t("admin.approvalsTitle")} <span className="num text-muted">({waiting.length})</span></h2>
+          <p className="mt-1 text-sm text-muted">{t("admin.approvalsHint")}</p>
+          <ul className="mt-4 divide-y divide-line rounded-[2px] border border-line bg-surface">
+            {waiting.map((s) => (
+              <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <Link href={`/admin/shops/${s.id}`} className="font-semibold hover:underline">{s.name}</Link>
+                  <p className="text-[14px] text-muted">
+                    {s.owner?.name ?? t("admin.noName")}
+                    {s.owner?.phone && <> · <OwnerPhone phone={s.owner.phone} /></>}
+                    {" · "}{t("admin.requested", { time: formatDubaiDateTime(s.created_at, locale) })}
+                  </p>
+                </div>
+                <StatusButtons id={s.id} name={s.name} status={s.status} t={t} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section aria-labelledby="att-h">
+        <h2 id="att-h" className="font-display text-[1.6rem] leading-tight">{t("admin.attentionTitle")}</h2>
+        <p className="mt-1 text-sm text-muted">{t("admin.attentionHint")}</p>
+        {issues.length === 0 ? (
+          <p className="mt-3 rounded-[2px] border border-line bg-surface p-4 text-[15px]">{t("admin.attentionNone")}</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-line rounded-[2px] border border-line bg-surface">
+            {issues.slice(0, 30).map(({ shop, issue }) => (
+              <li key={shop.id + issue.kind}>
+                <Link href={`/admin/shops/${shop.id}`} className="flex min-h-11 items-center gap-3 px-4 py-2.5 hover:bg-paper">
+                  <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${issue.level >= 3 ? "bg-danger" : issue.level === 2 ? "bg-warn" : "bg-gold-line"}`} />
+                  <span><span className="font-semibold">{shop.name}</span>: {issueText(issue, t)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section aria-labelledby="ov-h" className="space-y-3">
         <h2 id="ov-h" className="sr-only">{t("admin.thisMonth")}</h2>
@@ -125,7 +163,10 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
               {shops.map((s) => (
                 <tr key={s.id} className="border-b border-line last:border-0 hover:bg-paper">
                   <th scope="row" className="py-3 ps-4 pe-3 text-start font-normal">
-                    <Link href={`/admin/shops/${s.id}`} className="font-semibold hover:underline">{s.name}</Link>
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      <Link href={`/admin/shops/${s.id}`} className="font-semibold hover:underline">{s.name}</Link>
+                      <StatusBadge status={s.status} isDemo={s.is_demo} t={t} />
+                    </span>
                     <span className="block text-[12px] text-muted">{t("admin.staffN", { count: s.staff })}{s.site?.published ? ` · ${s.site.slug}` : ""}</span>
                   </th>
                   <td className="py-3 pe-3 whitespace-nowrap text-muted">{s.last_activity ? formatDubaiDateTime(s.last_activity, locale) : "—"}</td>
@@ -137,9 +178,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
                   <td dir="ltr" className="num py-3 pe-3 text-end">{formatUsd(aiCostUsd(s.last30.ai_tokens))}</td>
                   <td className="py-3 pe-4">
                     <ul className="flex flex-wrap gap-1">
-                      {flags(s).map((f) => (
-                        <li key={f} className={`caps rounded-[2px] px-1.5 py-0.5 text-[10px] font-semibold ${f === "nosite" ? "bg-tile text-muted" : "bg-warn-soft text-warn"}`}>{t(`admin.flag_${f}`)}</li>
-                      ))}
+                      {shopIssues(s).map((i) => <IssueChip key={i.kind} i={i} t={t} />)}
                     </ul>
                   </td>
                 </tr>

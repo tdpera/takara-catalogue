@@ -1,4 +1,4 @@
-const { sql, TMP, visible, until } = require('./lib.cjs');
+const { sql, TMP, visible, until, createShop, readQr } = require('./lib.cjs');
 const { chromium, devices } = require('playwright');
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -48,9 +48,7 @@ async function capture(p, { karat, category, weight, video, name }) {
   p.on('pageerror', e => errors.push('owner: ' + e.message));
 
   await login(p, '050 000 0001');
-  await p.getByLabel('Shop name').fill('Al Fahidi Jewellers');
-  await p.getByRole('button', { name: 'Create shop' }).click();
-  await p.waitForURL(base + '/');
+  await createShop(p, 'Al Fahidi Jewellers', base);
   await p.goto(base + '/rates');
   await p.getByRole('textbox', { name: /^24K/ }).fill('472.50');
   await p.getByRole('button', { name: 'Fill 22K, 21K, 18K from 24K' }).click();
@@ -129,15 +127,16 @@ async function capture(p, { karat, category, weight, video, name }) {
   check('WhatsApp text = message + labelled link', waText.startsWith('مرحبًا فاطمة') && waText.endsWith(`القطع المختارة لك بعرض 360°. اختر ما تودّ رؤيته:\n${link}`));
   check('nothing sent automatically: WhatsApp is a link the salesperson taps', (await p.getByRole('link', { name: 'Send on WhatsApp' }).getAttribute('target')) === '_blank');
 
-  // Image
+  // Tray image, with a QR code to the tray
   const dl = p.waitForEvent('download');
-  await p.getByRole('button', { name: 'Save catalogue image' }).click();
+  await p.getByRole('button', { name: 'Save tray image' }).click();
   const d = await dl;
-  const file = `${OUT}/catalogue-image.png`;
+  const file = `${OUT}/tray-image.png`;
   await d.saveAs(file);
   const buf = fs.readFileSync(file);
   const w = buf.readUInt32BE(16), h = buf.readUInt32BE(20);
-  check('catalogue image is a 1080 px wide PNG', buf.slice(1, 4).toString() === 'PNG' && w === 1080, `${w}×${h}, ${Math.round(buf.length / 1024)} KB`);
+  check('tray image is a 1080 px wide PNG', buf.slice(1, 4).toString() === 'PNG' && w === 1080, `${w}×${h}, ${Math.round(buf.length / 1024)} KB`);
+  check("the tray image's QR code opens the tray", (await readQr(browser, file)) === link);
   await shot(p, 'composer-link', true);
 
   // ---------- the client opens the link (no login)
@@ -212,6 +211,11 @@ async function capture(p, { karat, category, weight, video, name }) {
   const card = p.locator('section', { has: p.getByRole('heading', { name: 'Trays you sent' }) }).locator('li').first();
   check('trays you sent: the client and that it was opened', /Fatima Al Mansoori/.test(await card.innerText()) && /Opened once/.test(await card.innerText()), (await card.innerText()).replace(/\n/g, ' | '));
   await shot(p, 'shares-list');
+  const dl2 = p.waitForEvent('download');
+  await card.getByRole('button', { name: 'Save image' }).click();
+  const file2 = `${OUT}/tray-image-from-list.png`;
+  await (await dl2).saveAs(file2);
+  check('a sent tray can be saved as an image again from Trays, QR included', (await readQr(browser, file2)) === link);
   p.once('dialog', (dlg) => dlg.accept());
   await card.getByRole('button', { name: 'Turn off tray' }).click();
   await card.getByText('Tray turned off').waitFor();

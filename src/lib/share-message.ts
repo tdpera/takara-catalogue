@@ -47,6 +47,18 @@ const NOTE: Record<MsgLang, { vat: string; noVat: string; noPrice: string; link:
   },
 };
 
+/** Words on the tray image, in the client's language: what the QR code does and until when. */
+const IMAGE: Record<MsgLang, { scan: string; valid: string }> = {
+  en: { scan: "Scan to open your tray and choose the pieces you'd like to see.", valid: "Valid until {date}" },
+  ar: { scan: "امسح الرمز لفتح القطع المختارة لك، ثم اختر ما تودّ رؤيته.", valid: "صالح حتى {date}" },
+  hi: { scan: "अपनी ट्रे खोलने के लिए स्कैन करें और जो पीस देखना चाहें, उन्हें चुनें।", valid: "{date} तक मान्य" },
+  ml: { scan: "നിങ്ങളുടെ ട്രേ തുറക്കാൻ സ്കാൻ ചെയ്യുക, കാണാൻ ആഗ്രഹിക്കുന്ന പീസുകൾ തിരഞ്ഞെടുക്കുക.", valid: "{date} വരെ സാധുവാണ്" },
+};
+
+export function trayImageText(lang: MsgLang, validUntil: string): { scan: string; valid: string } {
+  return { scan: IMAGE[lang].scan, valid: IMAGE[lang].valid.replace("{date}", validUntil) };
+}
+
 export const firstName = (name: string | null | undefined) => (name ?? "").trim().split(/\s+/)[0] ?? "";
 
 export function englishIntro(clientName: string | null | undefined, count: number): string {

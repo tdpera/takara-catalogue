@@ -4,7 +4,8 @@ import { z } from "zod";
 import { requireUser } from "@/lib/session";
 import { getT } from "@/i18n/server";
 import { formatDubaiDateTime } from "@/lib/format";
-import { formatPhone } from "@/lib/phone";
+import { shopIssues, type ShopHealth, type ShopStatus } from "@/lib/shop-issues";
+import { issueText, OwnerPhone, StatusBadge, StatusButtons } from "@/components/admin/parts";
 import { siteAddress } from "@/lib/site-host";
 import { appOrigin } from "@/lib/site-origin";
 import type { ShopReport } from "@/lib/report";
@@ -18,6 +19,7 @@ type Activity = {
 };
 type ShopDetail = {
   id: string; name: string; created_at: string; last_activity: string | null; staff: number;
+  status: ShopStatus; status_changed_at: string | null; is_demo: boolean; rates_set_at: string | null; health: ShopHealth;
   owners: { name: string | null; phone: string | null }[];
   site: { slug: string; published: boolean; price_mode: string } | null;
   report: ShopReport; activity: Activity[];
@@ -35,6 +37,7 @@ function describe(a: Activity, t: Translate): string {
     case "tray_created": return t(a.props.channel === "whatsapp" ? "admin.ev_tray_whatsapp" : "admin.ev_tray_in_store", { code: a.tray ?? "", count: Number(a.props.pieces ?? 0) });
     case "tray_opened": return t("admin.ev_tray_opened", { code: a.tray ?? "" });
     case "rates_set": return t("admin.ev_rates_set", { count: Number(a.props.karats ?? 0) });
+    case "shop_status": return t(a.props.to === "active" ? (a.props.from === "pending" ? "admin.ev_shop_approved" : "admin.ev_shop_reactivated") : (a.props.from === "pending" ? "admin.ev_shop_declined" : "admin.ev_shop_suspended"));
     default: return a.kind;
   }
 }
@@ -49,6 +52,7 @@ export default async function AdminShopPage({ params }: { params: Promise<{ id: 
   if (!data) notFound();
   const s = data as ShopDetail;
   const site = s.site?.published ? siteAddress(s.site.slug, await appOrigin()) : null;
+  const issues = shopIssues(s);
 
   return (
     <main id="main" className="mx-auto max-w-6xl space-y-8 px-4 py-8">
@@ -57,7 +61,9 @@ export default async function AdminShopPage({ params }: { params: Promise<{ id: 
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-[2.2rem] leading-tight">{s.name}</h1>
+          <h1 className="flex flex-wrap items-center gap-3 font-display text-[2.2rem] leading-tight">
+            {s.name} <StatusBadge status={s.status} isDemo={s.is_demo} t={t} />
+          </h1>
           <p className="mt-1 text-sm text-muted">
             {t("admin.since", { date: formatDubaiDateTime(s.created_at, locale) })} · {t("admin.staffN", { count: s.staff })}
             {s.last_activity && <> · {t("admin.lastActive", { time: formatDubaiDateTime(s.last_activity, locale) })}</>}
@@ -66,17 +72,52 @@ export default async function AdminShopPage({ params }: { params: Promise<{ id: 
         {site && <a href={site} target="_blank" rel="noopener" className="caps text-[12px] font-semibold text-gold hover:underline" dir="ltr">{site.replace(/^https?:\/\//, "")}</a>}
       </div>
 
-      <section aria-labelledby="own-h" className="rounded-[2px] border border-line bg-surface p-4">
-        <h2 id="own-h" className="eyebrow mb-2">{t("admin.owner")}</h2>
-        <ul className="space-y-1">
-          {s.owners.map((o, i) => (
-            <li key={i}>
-              {o.name ?? t("admin.noName")}
-              {o.phone && <> · <a href={`https://wa.me/${o.phone.replace(/\D/g, "")}`} className="font-semibold hover:underline" dir="ltr">{formatPhone("+" + o.phone.replace(/^\+/, ""))}</a></>}
-            </li>
-          ))}
-        </ul>
-      </section>
+      <div className="grid gap-4 md:grid-cols-2">
+        <section aria-labelledby="own-h" className="rounded-[2px] border border-line bg-surface p-4">
+          <h2 id="own-h" className="eyebrow mb-2">{t("admin.owner")}</h2>
+          <ul className="space-y-1">
+            {s.owners.map((o, i) => (
+              <li key={i}>
+                {o.name ?? t("admin.noName")}
+                {o.phone && <> · <OwnerPhone phone={o.phone} /></>}
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section aria-labelledby="st-h" className="space-y-3 rounded-[2px] border border-line bg-surface p-4">
+          <h2 id="st-h" className="eyebrow">{t("admin.statusTitle")}</h2>
+          <p className="text-[15px]">
+            <span className="font-semibold">{t(`admin.status_${s.status}` as MessageKey)}</span>
+            {s.status_changed_at && <span className="text-muted"> · {t("admin.statusSince", { date: formatDubaiDateTime(s.status_changed_at, locale) })}</span>}
+          </p>
+          {s.is_demo ? (
+            <p className="text-sm text-muted">{t("admin.demoHint")}</p>
+          ) : (
+            <>
+              <p className="text-sm text-muted">{t(s.status === "pending" ? "admin.approvalsHint" : s.status === "active" ? "admin.suspendHint" : "admin.reactivateHint")}</p>
+              <StatusButtons id={s.id} name={s.name} status={s.status} t={t} />
+            </>
+          )}
+        </section>
+      </div>
+
+      {s.status === "active" && (
+        <section aria-labelledby="att-h">
+          <h2 id="att-h" className="font-display text-[1.6rem] leading-tight">{t("admin.attentionTitle")}</h2>
+          {issues.length === 0 ? (
+            <p className="mt-2 text-muted">{t("admin.attentionNone")}</p>
+          ) : (
+            <ul className="mt-3 space-y-1.5">
+              {issues.map((i) => (
+                <li key={i.kind} className="flex items-center gap-3 text-[15px]">
+                  <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${i.level >= 3 ? "bg-danger" : i.level === 2 ? "bg-warn" : i.level === 1 ? "bg-gold-line" : "bg-line"}`} />
+                  {issueText(i, t)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr]">
         <section aria-labelledby="rep-h">

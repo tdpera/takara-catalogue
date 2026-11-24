@@ -1,13 +1,20 @@
 "use client";
 /**
- * Branded catalogue image: PNG, 1080 px wide, up to 6 pieces. Drawn on the phone with a canvas,
- * so nothing extra is uploaded. Photos are placed as taken (cropped to a square, never filtered
- * or retouched), so the metal looks as it really is.
+ * The tray as an image: PNG, 1080 px wide, every piece of the tray (up to 24), with a QR code to
+ * the live tray at the bottom. Drawn on the phone with a canvas, so nothing extra is uploaded.
+ *
+ * Photos are placed as taken (cropped to a square, never filtered or retouched), so the metal
+ * looks as it really is. The shop's name is drawn faintly across each photo, as on the tray page,
+ * so a forwarded image still says whose designs these are.
  */
-export const IMAGE_MAX = 6;
+import QRCode from "qrcode";
+import { noPriceText, priceNote, trayImageText, type MsgLang } from "./share-message";
+
+export const IMAGE_MAX = 24;
 const W = 1080;
 const PAD = 48;
 const GAP = 24;
+const QR = 264;
 // Maison colours (see globals.css).
 const PAPER = "#fbf9f5";
 const TILE = "#f2eee6";
@@ -70,22 +77,69 @@ function drawCover(ctx: CanvasRenderingContext2D, img: ImageBitmap, x: number, y
   ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, x, y, size, size);
 }
 
-export async function renderCatalogueImage(p: {
+/** The shop's name, three times, slanted and faint, over the photo (never into it). */
+function drawWatermark(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, font: string) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, size, size);
+  ctx.clip();
+  ctx.translate(x + size / 2, y + size / 2);
+  ctx.rotate((-24 * Math.PI) / 180);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.direction = "ltr";
+  ctx.font = `500 ${Math.round(size / 15)}px ${font}`;
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.shadowColor = "rgba(0,0,0,0.25)";
+  ctx.shadowBlur = 3;
+  ctx.shadowOffsetY = 1;
+  // Spaced capitals for Latin names; other scripts as written (spacing would break joined letters).
+  const latin = /^[\x20-\x7E]+$/.test(text);
+  const c = ctx as CanvasRenderingContext2D & { letterSpacing?: string };
+  if (latin && "letterSpacing" in c) c.letterSpacing = `${Math.round(size / 50)}px`;
+  const label = latin ? text.toUpperCase() : text;
+  for (const dy of [-size / 3, 0, size / 3]) ctx.fillText(label, 0, dy, size * 1.2);
+  ctx.restore();
+}
+
+/** QR code, drawn module by module so it stays sharp at any size. */
+function drawQr(ctx: CanvasRenderingContext2D, url: string, x: number, y: number, size: number) {
+  const qr = QRCode.create(url, { errorCorrectionLevel: "M" });
+  const n = qr.modules.size;
+  const quiet = 4;
+  const cell = size / (n + quiet * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(x, y, size, size);
+  ctx.fillStyle = "#000000";
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (qr.modules.get(r, c)) ctx.fillRect(Math.floor(x + (c + quiet) * cell), Math.floor(y + (r + quiet) * cell), Math.ceil(cell), Math.ceil(cell));
+    }
+  }
+}
+
+export async function renderTrayImage(p: {
   shop: string;
   dateLine: string;
   note: string;
   noPhoto: string;
   noPrice: string;
   items: ImageItem[];
+  /** The tray's link, drawn as a QR code and as text. */
+  url: string;
+  scan: string;
+  valid: string;
   rtl?: boolean;
 }): Promise<Blob> {
   const items = p.items.slice(0, IMAGE_MAX);
-  const cols = items.length === 1 ? 1 : 2;
+  // One big photo, two columns up to six pieces, then three so a full tray stays a sensible size.
+  const cols = items.length === 1 ? 1 : items.length <= 6 ? 2 : 3;
   const cell = (W - PAD * 2 - GAP * (cols - 1)) / cols;
-  const textH = 190;
+  const s = cols === 3 ? 0.78 : 1; // text scale
+  const textH = Math.round(190 * s);
   const rows = Math.ceil(items.length / cols);
   const headerH = 190;
-  const footerH = 150;
+  const footerH = QR + PAD * 2 + 40;
   const H = headerH + rows * (cell + textH) + (rows - 1) * GAP + footerH;
 
   const canvas = document.createElement("canvas");
@@ -96,9 +150,11 @@ export async function renderCatalogueImage(p: {
   ctx.fillStyle = PAPER;
   ctx.fillRect(0, 0, W, H);
   ctx.textBaseline = "top";
-  ctx.direction = p.rtl ? "rtl" : "ltr";
+  const dir = p.rtl ? "rtl" : "ltr";
+  ctx.direction = dir;
   const startX = p.rtl ? W - PAD : PAD;
-  ctx.textAlign = p.rtl ? "right" : "left";
+  const align: CanvasTextAlign = p.rtl ? "right" : "left";
+  ctx.textAlign = align;
 
   // Header
   ctx.fillStyle = INK;
@@ -120,39 +176,66 @@ export async function renderCatalogueImage(p: {
     ctx.fillStyle = TILE;
     ctx.fillRect(x, y, cell, cell);
     const bmp = bitmaps[i];
-    if (bmp) drawCover(ctx, bmp, x, y, cell);
-    else {
+    if (bmp) {
+      drawCover(ctx, bmp, x, y, cell);
+      drawWatermark(ctx, p.shop, x, y, cell, SERIF);
+    } else {
       ctx.fillStyle = MUTED;
-      ctx.font = `400 28px ${FONT}`;
+      ctx.font = `400 ${Math.round(28 * s)}px ${FONT}`;
       ctx.textAlign = "center";
       ctx.fillText(p.noPhoto, x + cell / 2, y + cell / 2 - 14);
-      ctx.textAlign = p.rtl ? "right" : "left";
+      ctx.textAlign = align;
     }
     const tx = p.rtl ? x + cell : x;
+    const lh = Math.round(40 * s);
     ctx.fillStyle = INK;
-    ctx.font = `500 34px ${SERIF}`;
+    ctx.font = `500 ${Math.round(34 * s)}px ${SERIF}`;
     const nameLines = wrap(ctx, it.name, cell, 2);
-    nameLines.forEach((l, k) => ctx.fillText(l, tx, y + cell + 18 + k * 40));
-    const after = y + cell + 18 + nameLines.length * 40;
+    nameLines.forEach((l, k) => ctx.fillText(l, tx, y + cell + 18 * s + k * lh));
+    const after = y + cell + 18 * s + nameLines.length * lh;
     // Figures are always drawn left to right ("AED 11,183", never "11,183 AED"), even in Arabic.
     ctx.direction = "ltr";
     ctx.fillStyle = MUTED;
-    ctx.font = `400 28px ${FONT}`;
+    ctx.font = `400 ${Math.round(28 * s)}px ${FONT}`;
     ctx.fillText(`${it.karat}K · ${it.weight}`, tx, after + 4);
     ctx.fillStyle = INK;
-    ctx.font = `700 ${it.price ? 38 : 28}px ${FONT}`;
-    if (!it.price) ctx.direction = p.rtl ? "rtl" : "ltr";
-    ctx.fillText(it.price ?? p.noPrice, tx, after + 46);
-    ctx.direction = p.rtl ? "rtl" : "ltr";
+    ctx.font = `700 ${Math.round((it.price ? 38 : 28) * s)}px ${FONT}`;
+    if (!it.price) ctx.direction = dir;
+    ctx.fillText(it.price ?? p.noPrice, tx, after + 46 * s);
+    ctx.direction = dir;
   });
 
-  // Footer note
-  const fy = H - footerH + 24;
+  // Footer: the QR code to the live tray, what it's for, the link and until when it works.
+  const fy = H - footerH + PAD;
   ctx.fillStyle = LINE;
-  ctx.fillRect(PAD, fy - 12, W - PAD * 2, 2);
+  ctx.fillRect(PAD, fy - 24, W - PAD * 2, 2);
+  const qrX = p.rtl ? PAD : W - PAD - QR;
+  drawQr(ctx, p.url, qrX, fy, QR);
+  const textW = W - PAD * 3 - QR;
+  const textX = p.rtl ? W - PAD : PAD;
+  let ty = fy;
+  ctx.fillStyle = INK;
+  ctx.font = `600 32px ${FONT}`;
+  for (const l of wrap(ctx, p.scan, textW, 3)) {
+    ctx.fillText(l, textX, ty);
+    ty += 42;
+  }
+  ty += 10;
+  ctx.direction = "ltr";
+  ctx.fillStyle = GOLD;
+  ctx.font = `600 26px ${FONT}`;
+  ctx.fillText(wrap(ctx, p.url.replace(/^https?:\/\//, ""), textW, 1)[0] ?? "", textX, ty);
+  ctx.direction = dir;
+  ty += 40;
   ctx.fillStyle = MUTED;
-  ctx.font = `400 28px ${FONT}`;
-  wrap(ctx, p.note, W - PAD * 2, 3).forEach((l, k) => ctx.fillText(l, startX, fy + 10 + k * 38));
+  ctx.font = `500 26px ${FONT}`;
+  ctx.fillText(p.valid, textX, ty);
+  ty += 44;
+  ctx.font = `400 24px ${FONT}`;
+  for (const l of wrap(ctx, p.note, textW, Math.max(1, Math.floor((fy + QR + 30 - ty) / 32)))) {
+    ctx.fillText(l, textX, ty);
+    ty += 32;
+  }
 
   bitmaps.forEach((b) => b?.close());
   return await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png"));
@@ -179,4 +262,39 @@ export async function shareOrDownload(blob: Blob, filename: string, title: strin
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
   return "downloaded";
+}
+
+/** Dates on the image, in the client's language, with Western digits like the prices. */
+function dubaiDate(iso: string | Date, lang: MsgLang): string {
+  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : lang, { timeZone: "Asia/Dubai", day: "numeric", month: "long", year: "numeric", numberingSystem: "latn" }).format(new Date(iso));
+}
+
+/**
+ * Draws a sent tray as an image, in the client's language, and offers it to the phone's share
+ * sheet (or downloads it). Used by the composer and by each card under "Trays you sent".
+ */
+export async function saveTrayImage(p: {
+  shop: string;
+  vat: boolean;
+  lang: MsgLang;
+  url: string;
+  expiresAt: string;
+  items: ImageItem[];
+  noPhoto: string;
+}): Promise<"shared" | "downloaded" | "cancelled"> {
+  const text = trayImageText(p.lang, dubaiDate(p.expiresAt, p.lang));
+  const blob = await renderTrayImage({
+    shop: p.shop,
+    dateLine: dubaiDate(new Date(), p.lang),
+    note: priceNote(p.lang, p.vat),
+    noPhoto: p.noPhoto,
+    noPrice: noPriceText(p.lang),
+    items: p.items,
+    url: p.url,
+    scan: text.scan,
+    valid: text.valid,
+    rtl: p.lang === "ar",
+  });
+  const name = p.shop.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "tray";
+  return shareOrDownload(blob, `${name}-tray.png`, p.shop);
 }

@@ -5,7 +5,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { adminClient, createUser, deleteUsers, ok, type TestUser } from "./helpers";
+import { adminClient, createUser, deleteUsers, ok, type TestUser, createShop } from "./helpers";
 
 let ownerA: TestUser, salesA: TestUser, ownerB: TestUser;
 let shopA: string, shopB: string;
@@ -30,8 +30,8 @@ async function insertPiece(u: TestUser, shop: string, id: string, extra: Record<
 
 beforeAll(async () => {
   [ownerA, salesA, ownerB] = await Promise.all(Array.from({ length: 3 }, createUser));
-  shopA = ok(await ownerA.db.rpc("create_shop", { p_name: "AI Shop A" })) as string;
-  shopB = ok(await ownerB.db.rpc("create_shop", { p_name: "AI Shop B" })) as string;
+  shopA = await createShop(ownerA, "AI Shop A");
+  shopB = await createShop(ownerB, "AI Shop B");
   ok(await ownerA.db.rpc("invite_member", { p_shop: shopA, p_phone: salesA.phone, p_role: "salesperson" }));
   ok(await salesA.db.rpc("accept_invites"));
 });
@@ -56,7 +56,7 @@ describe("claiming", () => {
 
   it("limits each person to 12 requests a minute, with a retry hint", async () => {
     const u = await createUser();
-    const shop = ok(await u.db.rpc("create_shop", { p_name: "Busy shop" })) as string;
+    const shop = await createShop(u, "Busy shop");
     for (let i = 0; i < 12; i++) ok(await claim(u, shop));
     const r = await claim(u, shop);
     expect(r.error?.message).toBe("ai_rate_user");
@@ -67,7 +67,7 @@ describe("claiming", () => {
 
   it("limits each shop to 1500 requests a Dubai day", async () => {
     const u = await createUser();
-    const shop = ok(await u.db.rpc("create_shop", { p_name: "Quota shop" })) as string;
+    const shop = await createShop(u, "Quota shop");
     const old = new Date(Date.now() - 5 * 60_000).toISOString(); // outside the per-minute window
     const rows = Array.from({ length: 1500 }, () => ({ shop_id: shop, user_id: u.id, created_at: old }));
     ok(await adminClient().from("ai_requests").insert(rows));

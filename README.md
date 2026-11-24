@@ -21,7 +21,8 @@ are saved on the phone first and upload in the background.
 - **Digital trays:** staff pick pieces and send a private tray on WhatsApp (live prices, 360°
   spins, the shop's name across each photo, expiring after 1, 7 or 30 days). The customer ticks
   what they'd like to see and sends their choice back or shows a code in the shop; staff open it
-  in the Trays tab. Also a 1080 px catalogue image. Nothing is sent automatically.
+  in the Trays tab. Also **Save tray image**: the tray as a picture with a QR code that opens it.
+  Nothing is sent automatically.
 - **Shop websites:** a shop window for customers (`<shop>.<your domain>`, or `/site/<shop>`
   before a domain is set up), in 4 languages: introduction, "Ask for a tray", how to visit, and
   at most 12 showcase pieces the owner picks. The rest of the catalogue stays private (designs can
@@ -29,6 +30,9 @@ are saved on the phone first and upload in the background.
 - **Sales and reports:** marking a piece sold asks how the customer found it (walk-in, website,
   tray code, tray we sent, returning client). Owners get a **monthly report**; Takara's own team
   gets a **dashboard** of every shop (`/admin`). See DECISIONS.md 25-26.
+- **Takara runs it:** new shops sign up and wait for Takara's approval; Takara can suspend and
+  reactivate them, and `/admin` shows what **needs attention** across all shops. See DECISIONS.md 27
+  and "How Takara works (step by step)" below.
 - **Demo:** sign in with 050 000 0001 and code 123456 (shown on the sign-in page) and tap
   **Load the demo shop**.
 - **Design:** "Maison" (Bodoni Moda and Manrope on ivory, black velvet and gold). Signed-out
@@ -135,6 +139,7 @@ To try AI fill locally, add `ANTHROPIC_API_KEY` to `.env.local` and restart `pnp
 | `NEXT_PUBLIC_SITE_DOMAIN` | The domain shop websites live under, e.g. `takara.ae` gives `alnoor.takara.ae`. Leave unset until the domain is set up: websites then live at `<app>/site/<shop>`. | No |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Server only.** Signs images for the public share page, reads shop websites (their database functions return making charges, so only the server may call them); used by `pnpm seed`. Never expose it. | Yes, for share links and websites |
 | `NEXT_PUBLIC_DEMO_LOGIN` | `off` hides the demo number and code on the sign-in page and the "Load the demo shop" button. | No |
+| `TAKARA_WHATSAPP` | **Server only.** Takara's own WhatsApp number (e.g. `+971501234567`). Shops waiting for approval (or suspended) get a "Message Takara on WhatsApp" link. | No |
 | `NEXT_PUBLIC_DEMO_PHONE` | The demo account's number (a Supabase test number with code 123456). Default `+971500000001`. | No |
 | `ANTHROPIC_API_KEY` | **Server only.** AI fill and "Write with AI". Without it, those buttons say AI isn't set up. | No |
 | `ANTHROPIC_MODEL` | Claude model. Default `claude-opus-5-5`. | No |
@@ -228,9 +233,9 @@ caches, bump its `VERSION`.
 
 ### Shop websites, trays and the Takara dashboard
 
-1. **Database:** paste `supabase/updates/update-websites-and-trays.sql` into the SQL Editor and
-   run it (or `update-digital-trays.sql` if you already ran the websites update). The app tells
-   you which.
+1. **Database:** paste the file from `supabase/updates/` that the app names into the SQL Editor
+   and run it: `update-shop-approval.sql` if you already ran the Digital trays update,
+   `update-digital-trays.sql` if you ran only the websites one, else `update-websites-and-trays.sql`.
 2. **Make yourself a Takara admin** (for `/admin`). In the SQL Editor, with your number in
    international format without the `+`:
 
@@ -250,6 +255,50 @@ caches, bump its `VERSION`.
    Phone, add the test number `971500000001` with code `123456` (once). Then sign in with
    050 000 0001 / 123456 and tap **Load the demo shop**: catalogue, website at `/site/demo`,
    trays and a report, ready in about 20 seconds. Its pictures are drawings marked "DEMO".
+   The demo shop never needs approval.
+
+### How Takara works (step by step)
+
+**You (Takara), once**
+1. Run the database update the app names (above).
+2. Make your number a Takara admin (the SQL above). The Shop tab then shows **Takara dashboard**
+   (`/admin`). Optionally set `TAKARA_WHATSAPP` in Vercel so waiting shops can message you.
+
+**A new shop signs up**
+1. The owner opens the app, signs in with their mobile number and enters the shop's name.
+2. They see "*Shop* is waiting for approval". Nothing in the app works for them yet.
+
+**You approve it**
+1. `/admin` → **Waiting for approval** lists the shop, the owner's name and number. Tap the number
+   to talk on WhatsApp (e.g. to arrange the setup fee).
+2. Tap **Approve**. The owner taps **Check again** (or reopens the app) and is in.
+3. Later, on the shop's page: **Suspend** (e.g. unpaid: staff are locked out, tray links and the
+   website stop; nothing is deleted) and **Reactivate**.
+
+**The shop, every day**
+1. **Rates:** set today's gold rates (22K, 21K and 18K can be filled from 24K).
+2. **Add:** photograph each piece on the scale; AI fills in the details; check and save.
+3. **Team:** invite staff by phone number (salespeople, managers).
+4. The whole catalogue stays private to the shop's staff.
+
+**Sharing with a customer**
+1. In the catalogue, select pieces → **Send tray** → pick (or add) the client → choose how long
+   the link works (1, 7 or 30 days) → **Create the tray**.
+2. **Send on WhatsApp** (WhatsApp opens with the message; the salesperson presses send), or
+   **Save tray image**: a picture of the pieces with prices, the shop's name across each photo and
+   a QR code to the tray, to send on any app or print. Either can be done again later from
+   **Trays → Trays you sent**.
+
+**The customer**
+1. Opens the tray (the link, or by scanning the QR code). They see only those pieces.
+2. Ticks the ones they'd like to see, then **sends their choice** on WhatsApp or **shows the
+   code** in the shop.
+3. Staff type the code (or scan it) in **Trays**, bring out the pieces, and mark what sells as
+   sold ("How did they find it?").
+
+**You, any time**
+- `/admin` → **Needs attention**: customers waiting for a reply, AI errors, unfinished uploads,
+  old gold rates, quiet shops. Tap one to open that shop: its monthly report, activity and status.
 
 ---
 

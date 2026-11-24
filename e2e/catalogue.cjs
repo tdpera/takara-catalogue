@@ -1,4 +1,4 @@
-const { sql, TMP, visible, until } = require('./lib.cjs');
+const { sql, TMP, visible, until, createShop } = require('./lib.cjs');
 const { chromium, devices } = require('playwright');
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -47,9 +47,7 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   p.on('pageerror', e => errors.push(e.message));
 
   await login(p, '050 000 0001');
-  await p.getByLabel('Shop name').fill('Al Fahidi Jewellers');
-  await p.getByRole('button', { name: 'Create shop' }).click();
-  await p.waitForURL(base + '/');
+  await createShop(p, 'Al Fahidi Jewellers', base);
   check('empty catalogue invites the first piece', await visible(p.getByText('No pieces yet')));
   await p.goto(base + '/rates');
   await p.getByRole('textbox', { name: /^24K/ }).fill('472.50');
@@ -239,7 +237,7 @@ const bgPos = (loc) => loc.evaluate((el) => el.style.backgroundPosition);
   const ob = await browser.newContext({ ...devices['Pixel 5'] });
   const o = await ob.newPage();
   await login(o, '050 000 0003');
-  await o.getByLabel('Shop name').fill('Meena Gold'); await o.getByRole('button', { name: 'Create shop' }).click(); await o.waitForURL(base + '/');
+  await createShop(o, 'Meena Gold', base);
   await o.goto(pieceUrl);
   check("another shop gets 'not found'", await visible(o.getByText("This piece doesn't exist, or it belongs to another shop.")));
   check("another shop's catalogue is empty", (await (await o.goto(base + '/')).text()).includes('No pieces yet'));

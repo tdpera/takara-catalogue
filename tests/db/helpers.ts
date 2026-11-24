@@ -77,3 +77,13 @@ export function ok<T>(res: { data: T; error: unknown }): T {
   if (res.error) throw res.error;
   return res.data;
 }
+
+/**
+ * Creates a shop as `u` (its owner) and approves it, as a Takara admin would: new shops start
+ * waiting for approval and their staff can't use them until then.
+ */
+export async function createShop(u: TestUser, name: string): Promise<string> {
+  const id = ok(await u.db.rpc("create_shop", { p_name: name })) as string;
+  ok(await adminClient().from("shops").update({ status: "active" }).eq("id", id));
+  return id;
+}

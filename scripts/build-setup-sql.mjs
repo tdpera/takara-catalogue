@@ -22,9 +22,11 @@ console.log(`supabase/setup.sql: ${files.length} migrations`);
 
 // Updates for a project that already ran setup.sql: paste the one the app names (it shows which
 // on its "database needs an update" screen, see src/lib/schema.ts).
+// Each file brings a database from where it is to the latest version.
 const UPDATES = {
-  "update-websites-and-trays.sql": ["20261124000100_websites_trays_reports.sql", "20261125000100_digital_trays_showcase.sql"],
-  "update-digital-trays.sql": ["20261125000100_digital_trays_showcase.sql"],
+  "update-websites-and-trays.sql": ["20261124000100_websites_trays_reports.sql", "20261125000100_digital_trays_showcase.sql", "20261126000100_shop_approval.sql"],
+  "update-digital-trays.sql": ["20261125000100_digital_trays_showcase.sql", "20261126000100_shop_approval.sql"],
+  "update-shop-approval.sql": ["20261126000100_shop_approval.sql"],
 };
 mkdirSync("supabase/updates", { recursive: true });
 for (const [name, list] of Object.entries(UPDATES)) {

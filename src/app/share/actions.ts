@@ -177,3 +177,41 @@ export async function revokeShare(id: string): Promise<{ ok: true } | Fail> {
   revalidatePath("/trays");
   return { ok: true };
 }
+
+// ------------------------------------------------------------------ tray image
+
+export type TrayImageData = {
+  shop: string; vat: boolean; lang: MsgLang; url: string; expiresAt: string;
+  items: { name: string; karat: number; weight: string; price: string | null; photo: string | null }[];
+};
+
+/**
+ * What the phone needs to draw a sent tray as an image: its pieces with today's prices (worked
+ * out here), photos, link and expiry. Only the salesperson who sent it (RLS), only while it works.
+ * Sold pieces are left out.
+ */
+export async function trayImageData(id: string): Promise<({ ok: true } & TrayImageData) | Fail> {
+  if (!z.uuid().safeParse(id).success) return { ok: false, error: "invalid" };
+  const s = await session();
+  if (!s) return { ok: false, error: "auth" };
+  const { data, error } = await s.supabase
+    .from("shares")
+    .select("shop_id, public_token, piece_ids, expires_at, revoked_at, client:clients(language), shop:shops(name, vat_enabled)")
+    .eq("id", id)
+    .maybeSingle<{
+      shop_id: string; public_token: string; piece_ids: string[]; expires_at: string; revoked_at: string | null;
+      client: { language: MsgLang } | null; shop: { name: string; vat_enabled: boolean } | null;
+    }>();
+  if (error || !data || !data.shop) return { ok: false, error: "failed" };
+  if (data.revoked_at || new Date(data.expires_at) <= new Date()) return { ok: false, error: "expired" };
+  const items = (await loadShareItems(data.shop_id, data.piece_ids)).filter((i) => i.status !== "sold");
+  return {
+    ok: true,
+    shop: data.shop.name,
+    vat: data.shop.vat_enabled,
+    lang: data.client?.language ?? "en",
+    url: `${await siteUrl()}/s/${data.public_token}`,
+    expiresAt: data.expires_at,
+    items: items.map((i) => ({ name: i.name, karat: i.karat, weight: i.weight, price: i.price, photo: i.photo })),
+  };
+}

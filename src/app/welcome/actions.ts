@@ -20,7 +20,8 @@ export async function createShop(_prev: FormState, form: FormData): Promise<Form
   if (prefix && !/^[A-Z0-9]{1,6}$/.test(prefix)) return { error: "welcome.invalidPrefix" };
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("create_shop", { p_name: name, p_sku_prefix: prefix || null });
-  if (error) return { error: dbErrorKey(error) };
+  if (error) return { error: error.message === "already_waiting" ? "welcome.alreadyWaiting" : dbErrorKey(error) };
   (await cookies()).set(SHOP_COOKIE, data as string, { maxAge: 31536000, sameSite: "lax", path: "/", httpOnly: true });
-  redirect("/");
+  // New shops wait for Takara's approval: the welcome page says so until then.
+  redirect("/welcome");
 }

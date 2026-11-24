@@ -4,7 +4,7 @@
  * may call them; reports are for owners and Takara admins; shops never see each other.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { adminClient, anonClient, createUser, deleteUsers, ok, type TestUser } from "./helpers";
+import { adminClient, anonClient, createUser, deleteUsers, ok, type TestUser, createShop } from "./helpers";
 
 let owner: TestUser, sales: TestUser, other: TestUser, takara: TestUser;
 let shop: string, otherShop: string;
@@ -17,8 +17,8 @@ async function addPiece(u: TestUser, s: string, name: string) {
 
 beforeAll(async () => {
   [owner, sales, other, takara] = await Promise.all(Array.from({ length: 4 }, createUser));
-  shop = ok(await owner.db.rpc("create_shop", { p_name: "Web Shop" })) as string;
-  otherShop = ok(await other.db.rpc("create_shop", { p_name: "Other Web Shop" })) as string;
+  shop = await createShop(owner, "Web Shop");
+  otherShop = await createShop(other, "Other Web Shop");
   ok(await owner.db.rpc("invite_member", { p_shop: shop, p_phone: sales.phone, p_role: "salesperson" }));
   ok(await sales.db.rpc("accept_invites"));
   ok(await owner.db.from("gold_rates").insert({ shop_id: shop, karat: 22, aed_per_g: 437.5, set_by: owner.id }));

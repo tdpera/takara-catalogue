@@ -102,13 +102,25 @@ if (local) {
   const secondOwner = await userFor("+971500000003");
   await removeOldShop(db, SECOND_NAME, secondOwner);
   const second = must(
-    await db.from("shops").insert({ name: SECOND_NAME, sku_prefix: "GLJ", default_making_per_g: 15, vat_enabled: true, created_by: secondOwner }).select("id").single(),
+    await db.from("shops").insert({ name: SECOND_NAME, sku_prefix: "GLJ", default_making_per_g: 15, vat_enabled: true, created_by: secondOwner, status: "active", is_demo: true }).select("id").single(),
     "create second shop",
   );
   must(await db.from("shop_members").insert({ shop_id: second.id, user_id: secondOwner, role: "owner" }), "add second owner");
   must(await db.from("gold_rates").insert(Object.entries(RATES).map(([karat, aed]) => ({ shop_id: second.id, karat: Number(karat), aed_per_g: aed, set_by: secondOwner, set_at: new Date(Date.now() - 9 * 86400 * 1000).toISOString() }))), "set second rates");
   console.log(`\nSecond demo shop "${SECOND_NAME}":`);
   await addPieces(db, second.id, PIECES.filter((p) => ["chain", "baby-bangle", "bracelet", "pendant"].includes(p.art)).map((p) => ({ ...p, spin: false, status: undefined })), { owner: secondOwner, ageH: 80, log: (l) => console.log(l) });
+
+  // And a shop that has just signed up, waiting for Takara's approval.
+  const PENDING_NAME = "Pearl Souq Jewellers";
+  const pendingOwner = await userFor("+971500000004");
+  must(await db.from("profiles").update({ display_name: "Rashid" }).eq("user_id", pendingOwner), "name the waiting owner");
+  await removeOldShop(db, PENDING_NAME, pendingOwner);
+  const pending = must(
+    await db.from("shops").insert({ name: PENDING_NAME, sku_prefix: "PSJ", created_by: pendingOwner, created_at: new Date(Date.now() - 3 * 3600 * 1000).toISOString() }).select("id").single(),
+    "create waiting shop",
+  );
+  must(await db.from("shop_members").insert({ shop_id: pending.id, user_id: pendingOwner, role: "owner" }), "add waiting owner");
+  console.log(`\nShop waiting for approval: "${PENDING_NAME}" (050 000 0004, code 123456)`);
 }
 
 console.log(`\nDemo shop "${DEMO_SHOP_NAME}" is ready: ${PIECES.length} pieces, today's rates (24K AED ${RATES[24]}), a client, a Digital tray sent to her, a website and 3 customer trays.`);
